@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEntry } from '../types';
-import { statusClass, imageUrl } from '../utils/formDisplay';
+import { statusClass, statusLabel, imageUrl } from '../utils/formDisplay';
 
 interface Props {
   forms: FormEntry[];
@@ -49,16 +49,26 @@ export default function AlbumView({ forms, onSelect, onToggleEligibility }: Prop
               >
                 {form.living_dex_eligible ? '✕' : '↺'}
               </button>
-              {imageUrl(form) ? (
-                <img src={imageUrl(form)!} alt={form.display_name} />
-              ) : (
-                <div className="form-card-placeholder" />
-              )}
-              <div className="name">{form.display_name}</div>
-              <div className="meta">
-                {form.generation_display_name ?? '—'} · {form.region_display_name ?? '—'}
+              <div className="album-slot-art">
+                {imageUrl(form) ? (
+                  <img src={imageUrl(form)!} alt={form.display_name} />
+                ) : (
+                  <div className="form-card-placeholder">sem arte</div>
+                )}
               </div>
-              {form.tcg_card_set_name && <span className="badge">{form.tcg_card_set_name}</span>}
+              <div className="album-slot-details">
+                <div className="name">{form.display_name}</div>
+                <div className="meta">
+                  {form.generation_display_name ?? '—'} · {form.region_display_name ?? '—'}
+                </div>
+                {form.tcg_card_set_name && (
+                  <div className="album-slot-set">
+                    {form.tcg_card_set_name}
+                    {form.tcg_card_number ? ` #${form.tcg_card_number}` : ''}
+                  </div>
+                )}
+                <span className={`status-pill ${statusClass(form)}`}>{statusLabel(form)}</span>
+              </div>
             </div>
           ) : (
             <div key={`empty-${i}`} className="album-slot album-slot-empty" />
