@@ -3,7 +3,7 @@
 ## Regras Obrigatórias
 
 ### 1. Documentação de Alterações
-Toda alteração de código deve ser documentada em `/docs/alteracao_XXXX.md` (número sequencial com 4 dígitos). Próximo número: **0004**.
+Toda alteração de código deve ser documentada em `/docs/alteracao_XXXX.md` (número sequencial com 4 dígitos). Próximo número: **0005**.
 
 Formato:
 ```

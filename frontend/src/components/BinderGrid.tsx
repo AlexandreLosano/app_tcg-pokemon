@@ -4,6 +4,7 @@ interface Props {
   forms: FormEntry[];
   loading: boolean;
   onSelect: (formId: number) => void;
+  onToggleEligibility: (formId: number, eligible: boolean) => void;
 }
 
 function statusClass(form: FormEntry): string {
@@ -17,7 +18,7 @@ function imageUrl(form: FormEntry): string | null {
   return form.tcg_card_image_small_url ?? form.sprite_url ?? form.species_sprite_default_url ?? null;
 }
 
-export default function BinderGrid({ forms, loading, onSelect }: Props) {
+export default function BinderGrid({ forms, loading, onSelect, onToggleEligibility }: Props) {
   if (loading) {
     return <div className="empty-state">Carregando…</div>;
   }
@@ -38,10 +39,20 @@ export default function BinderGrid({ forms, loading, onSelect }: Props) {
         return (
           <div
             key={form.id}
-            className={`form-card ${statusClass(form)}`}
+            className={`form-card ${statusClass(form)} ${form.living_dex_eligible ? '' : 'not-eligible'}`}
             onClick={() => onSelect(form.id)}
             role="button"
           >
+            <button
+              className="hide-btn"
+              title={form.living_dex_eligible ? 'Ocultar da listagem (não conto esta forma)' : 'Voltar a considerar esta forma'}
+              onClick={e => {
+                e.stopPropagation();
+                onToggleEligibility(form.id, !form.living_dex_eligible);
+              }}
+            >
+              {form.living_dex_eligible ? '✕' : '↺'}
+            </button>
             {img ? <img src={img} alt={form.display_name} /> : <div className="form-card-placeholder" />}
             <div className="name">{form.display_name}</div>
             <div className="meta">

@@ -123,6 +123,7 @@ button {
 
 /* Form card */
 .form-card {
+  position: relative;
   background: var(--surface);
   border: 2px solid var(--gray);
   border-radius: 10px;
@@ -137,6 +138,46 @@ button {
 
 .form-card:hover {
   transform: translateY(-2px);
+}
+
+.form-card.not-eligible {
+  opacity: 0.45;
+}
+
+.hide-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  line-height: 18px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.form-card:hover .hide-btn {
+  opacity: 1;
+}
+
+.form-card.not-eligible .hide-btn {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.hide-btn:hover {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.form-card.not-eligible .hide-btn:hover {
+  color: var(--green);
+  border-color: var(--green);
 }
 
 .form-card.status-definitive {
