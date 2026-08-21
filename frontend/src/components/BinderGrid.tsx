@@ -1,14 +1,14 @@
 import type { FormEntry } from '../types';
-import { statusClass, imageUrl } from '../utils/formDisplay';
+import { statusClass, imageUrl, formStatusLabel } from '../utils/formDisplay';
 
 interface Props {
   forms: FormEntry[];
   loading: boolean;
   onSelect: (formId: number) => void;
-  onToggleEligibility: (formId: number, eligible: boolean) => void;
+  onToggleHidden: (formId: number, hide: boolean) => void;
 }
 
-export default function BinderGrid({ forms, loading, onSelect, onToggleEligibility }: Props) {
+export default function BinderGrid({ forms, loading, onSelect, onToggleHidden }: Props) {
   if (loading) {
     return <div className="empty-state">Carregando…</div>;
   }
@@ -26,29 +26,31 @@ export default function BinderGrid({ forms, loading, onSelect, onToggleEligibili
     <div className="binder-grid">
       {forms.map(form => {
         const img = imageUrl(form);
+        const isVisible = form.status === 'visible';
         return (
           <div
             key={form.id}
-            className={`form-card ${statusClass(form)} ${form.living_dex_eligible ? '' : 'not-eligible'}`}
+            className={`form-card ${statusClass(form)} ${isVisible ? '' : 'not-eligible'}`}
             onClick={() => onSelect(form.id)}
             role="button"
           >
             <button
               className="hide-btn"
-              title={form.living_dex_eligible ? 'Ocultar da listagem (não conto esta forma)' : 'Voltar a considerar esta forma'}
+              title={isVisible ? 'Ocultar da listagem (não conto esta forma)' : 'Voltar para visível'}
               onClick={e => {
                 e.stopPropagation();
-                onToggleEligibility(form.id, !form.living_dex_eligible);
+                onToggleHidden(form.id, isVisible);
               }}
             >
-              {form.living_dex_eligible ? '✕' : '↺'}
+              {isVisible ? '✕' : '↺'}
             </button>
             {img ? <img src={img} alt={form.display_name} /> : <div className="form-card-placeholder" />}
             <div className="name">{form.display_name}</div>
             <div className="meta">
               {form.generation_display_name ?? '—'} · {form.region_display_name ?? '—'}
             </div>
-            {form.tcg_card_set_name && <span className="badge">{form.tcg_card_set_name}</span>}
+            {!isVisible && <span className="badge form-status-badge">{formStatusLabel(form.status)}</span>}
+            {isVisible && form.tcg_card_set_name && <span className="badge">{form.tcg_card_set_name}</span>}
           </div>
         );
       })}

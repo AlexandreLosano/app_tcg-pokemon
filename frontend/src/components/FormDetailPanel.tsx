@@ -1,12 +1,27 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { FormEntry, TcgCardSearchResult } from '../types';
+import type { FormEntry, FormStatus, TcgCardSearchResult } from '../types';
 
 interface Props {
   form: FormEntry;
   onClose: () => void;
   onUpdated: (form: FormEntry) => void;
 }
+
+const STATUS_OPTIONS: { value: FormStatus; label: string; description: string }[] = [
+  { value: 'visible', label: 'Visível', description: 'Conta como slot ativo da Living Dex.' },
+  {
+    value: 'no_need',
+    label: 'Sem necessidade',
+    description: 'Existe carta, mas não é prioridade comprar agora.',
+  },
+  {
+    value: 'card_unavailable',
+    label: 'Sem carta ainda',
+    description: 'Quero ter, mas ainda não existe carta impressa para essa forma.',
+  },
+  { value: 'hidden', label: 'Oculta', description: 'Não conta como slot separado (ex: forma cosmética).' },
+];
 
 // A Pokémon TCG API tem dezenas de raridades distintas (Common, Rare Holo GX, Rare Secret, ...).
 // Agrupamos visualmente com um símbolo, mas o filtro em si usa a string exata da API.
@@ -64,13 +79,9 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
     onUpdated({ ...form, notes: updated.notes });
   };
 
-  const handleEligibilityToggle = async () => {
-    const result = await api.forms.setEligibility(form.id, !form.living_dex_eligible);
-    onUpdated({
-      ...form,
-      living_dex_eligible: result.living_dex_eligible,
-      living_dex_eligible_overridden: result.living_dex_eligible_overridden,
-    });
+  const handleStatusChange = async (status: FormStatus) => {
+    const result = await api.forms.setStatus(form.id, status);
+    onUpdated({ ...form, status: result.status, status_overridden: result.status_overridden });
   };
 
   const handleSearch = async () => {
@@ -181,11 +192,25 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
         </div>
 
         <div className="modal-section">
-          <h3>Elegibilidade na Living Dex</h3>
-          <div className="toggle-row">
-            <input type="checkbox" checked={form.living_dex_eligible} onChange={handleEligibilityToggle} />
-            Contar esta forma como slot separado
-            {form.living_dex_eligible_overridden && <span className="badge">ajustado manualmente</span>}
+          <h3>
+            Status na Living Dex
+            {form.status_overridden && <span className="badge">ajustado manualmente</span>}
+          </h3>
+          <div className="status-options">
+            {STATUS_OPTIONS.map(opt => (
+              <label key={opt.value} className="status-option">
+                <input
+                  type="radio"
+                  name="form-status"
+                  checked={form.status === opt.value}
+                  onChange={() => handleStatusChange(opt.value)}
+                />
+                <div>
+                  <div className="status-option-label">{opt.label}</div>
+                  <div className="status-option-desc">{opt.description}</div>
+                </div>
+              </label>
+            ))}
           </div>
         </div>
 

@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { EligibilityFilter, Generation, Region, FormEntry, SyncSummary, ViewMode } from '../types';
+import type { StatusFilter, Generation, Region, FormEntry, SyncSummary, ViewMode } from '../types';
 import Toolbar from './Toolbar';
 import BinderGrid from './BinderGrid';
 import ListView from './ListView';
 import AlbumView from './AlbumView';
 import FormDetailPanel from './FormDetailPanel';
 
-function matchesEligibilityFilter(form: FormEntry, eligibility: EligibilityFilter): boolean {
-  if (eligibility === 'eligible') return form.living_dex_eligible;
-  if (eligibility === 'hidden') return !form.living_dex_eligible;
-  return true;
+function matchesStatusFilter(form: FormEntry, status: StatusFilter): boolean {
+  if (status === 'all') return true;
+  return form.status === status;
 }
 
 export default function BinderPage() {
@@ -21,7 +20,7 @@ export default function BinderPage() {
 
   const [generationId, setGenerationId] = useState<number | undefined>(undefined);
   const [regionId, setRegionId] = useState<number | undefined>(undefined);
-  const [eligibility, setEligibility] = useState<EligibilityFilter>('eligible');
+  const [status, setStatus] = useState<StatusFilter>('visible');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   const [selectedFormId, setSelectedFormId] = useState<number | null>(null);
@@ -39,12 +38,12 @@ export default function BinderPage() {
   const loadForms = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.forms.list({ generation_id: generationId, region_id: regionId, eligibility });
+      const data = await api.forms.list({ generation_id: generationId, region_id: regionId, status });
       setForms(data);
     } finally {
       setLoading(false);
     }
-  }, [generationId, regionId, eligibility]);
+  }, [generationId, regionId, status]);
 
   useEffect(() => {
     loadReference();
@@ -75,24 +74,19 @@ export default function BinderPage() {
   const handleFormUpdated = (updated: FormEntry) => {
     setForms(prev => {
       const next = prev.map(f => (f.id === updated.id ? updated : f));
-      return next.filter(f => f.id !== updated.id || matchesEligibilityFilter(f, eligibility));
+      return next.filter(f => f.id !== updated.id || matchesStatusFilter(f, status));
     });
   };
 
-  const handleToggleEligibility = async (formId: number, eligible: boolean) => {
-    const result = await api.forms.setEligibility(formId, eligible);
+  // Ação rápida do card/linha: alterna só entre visível e oculta (o resto das categorias
+  // fica no painel de detalhe, que é onde faz sentido decidir com calma).
+  const handleToggleHidden = async (formId: number, hide: boolean) => {
+    const result = await api.forms.setStatus(formId, hide ? 'hidden' : 'visible');
     setForms(prev => {
       const updated = prev.map(f =>
-        f.id === formId
-          ? {
-              ...f,
-              living_dex_eligible: result.living_dex_eligible,
-              living_dex_eligible_overridden: result.living_dex_eligible_overridden,
-            }
-          : f
+        f.id === formId ? { ...f, status: result.status, status_overridden: result.status_overridden } : f
       );
-      // Some da lista na hora se a forma deixou de bater com o filtro de elegibilidade atual.
-      return updated.filter(f => f.id !== formId || matchesEligibilityFilter(f, eligibility));
+      return updated.filter(f => f.id !== formId || matchesStatusFilter(f, status));
     });
   };
 
@@ -103,11 +97,11 @@ export default function BinderPage() {
         regions={regions}
         generationId={generationId}
         regionId={regionId}
-        eligibility={eligibility}
+        status={status}
         viewMode={viewMode}
         onGenerationChange={setGenerationId}
         onRegionChange={setRegionId}
-        onEligibilityChange={setEligibility}
+        onStatusChange={setStatus}
         onViewModeChange={setViewMode}
         onSync={handleSync}
         syncing={syncing}
@@ -119,7 +113,7 @@ export default function BinderPage() {
           forms={forms}
           loading={loading}
           onSelect={id => setSelectedFormId(id)}
-          onToggleEligibility={handleToggleEligibility}
+          onToggleHidden={handleToggleHidden}
         />
       )}
       {viewMode === 'list' && (
@@ -127,15 +121,15 @@ export default function BinderPage() {
           forms={forms}
           loading={loading}
           onSelect={id => setSelectedFormId(id)}
-          onToggleEligibility={handleToggleEligibility}
+          onToggleHidden={handleToggleHidden}
         />
       )}
       {viewMode === 'album' && !loading && (
         <AlbumView
-          key={`${generationId}-${regionId}-${eligibility}`}
+          key={`${generationId}-${regionId}-${status}`}
           forms={forms}
           onSelect={id => setSelectedFormId(id)}
-          onToggleEligibility={handleToggleEligibility}
+          onToggleHidden={handleToggleHidden}
         />
       )}
       {viewMode === 'album' && loading && <div className="empty-state">Carregando…</div>}

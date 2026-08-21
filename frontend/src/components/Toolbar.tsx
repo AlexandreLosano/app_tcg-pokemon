@@ -1,15 +1,15 @@
-import type { EligibilityFilter, Generation, Region, SyncSummary, ViewMode } from '../types';
+import type { StatusFilter, Generation, Region, SyncSummary, ViewMode } from '../types';
 
 interface Props {
   generations: Generation[];
   regions: Region[];
   generationId: number | undefined;
   regionId: number | undefined;
-  eligibility: EligibilityFilter;
+  status: StatusFilter;
   viewMode: ViewMode;
   onGenerationChange: (id: number | undefined) => void;
   onRegionChange: (id: number | undefined) => void;
-  onEligibilityChange: (value: EligibilityFilter) => void;
+  onStatusChange: (value: StatusFilter) => void;
   onViewModeChange: (value: ViewMode) => void;
   onSync: () => void;
   syncing: boolean;
@@ -28,11 +28,11 @@ export default function Toolbar({
   regions,
   generationId,
   regionId,
-  eligibility,
+  status,
   viewMode,
   onGenerationChange,
   onRegionChange,
-  onEligibilityChange,
+  onStatusChange,
   onViewModeChange,
   onSync,
   syncing,
@@ -74,11 +74,13 @@ export default function Toolbar({
       </label>
 
       <label>
-        Elegibilidade
-        <select value={eligibility} onChange={e => onEligibilityChange(e.target.value as EligibilityFilter)}>
-          <option value="eligible">Elegíveis</option>
+        Status
+        <select value={status} onChange={e => onStatusChange(e.target.value as StatusFilter)}>
+          <option value="visible">Visíveis</option>
           <option value="all">Todas</option>
           <option value="hidden">Ocultas</option>
+          <option value="no_need">Sem necessidade</option>
+          <option value="card_unavailable">Sem carta ainda</option>
         </select>
       </label>
 

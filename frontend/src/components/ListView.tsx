@@ -1,14 +1,14 @@
 import type { FormEntry } from '../types';
-import { statusClass, statusLabel, imageUrl } from '../utils/formDisplay';
+import { statusClass, statusLabel, imageUrl, formStatusLabel } from '../utils/formDisplay';
 
 interface Props {
   forms: FormEntry[];
   loading: boolean;
   onSelect: (formId: number) => void;
-  onToggleEligibility: (formId: number, eligible: boolean) => void;
+  onToggleHidden: (formId: number, hide: boolean) => void;
 }
 
-export default function ListView({ forms, loading, onSelect, onToggleEligibility }: Props) {
+export default function ListView({ forms, loading, onSelect, onToggleHidden }: Props) {
   if (loading) {
     return <div className="empty-state">Carregando…</div>;
   }
@@ -32,6 +32,7 @@ export default function ListView({ forms, loading, onSelect, onToggleEligibility
             <th>Geração</th>
             <th>Região</th>
             <th>Status</th>
+            <th>Categoria</th>
             <th>Carta anexada</th>
             <th></th>
           </tr>
@@ -39,12 +40,9 @@ export default function ListView({ forms, loading, onSelect, onToggleEligibility
         <tbody>
           {forms.map(form => {
             const img = imageUrl(form);
+            const isVisible = form.status === 'visible';
             return (
-              <tr
-                key={form.id}
-                className={`${statusClass(form)} ${form.living_dex_eligible ? '' : 'not-eligible'}`}
-                onClick={() => onSelect(form.id)}
-              >
+              <tr key={form.id} className={`${statusClass(form)} ${isVisible ? '' : 'not-eligible'}`} onClick={() => onSelect(form.id)}>
                 <td className="list-thumb">
                   {img ? <img src={img} alt={form.display_name} /> : <div className="form-card-placeholder" />}
                 </td>
@@ -54,6 +52,7 @@ export default function ListView({ forms, loading, onSelect, onToggleEligibility
                 <td>
                   <span className={`status-pill ${statusClass(form)}`}>{statusLabel(form)}</span>
                 </td>
+                <td>{isVisible ? '—' : <span className="badge form-status-badge">{formStatusLabel(form.status)}</span>}</td>
                 <td>
                   {form.tcg_card_name
                     ? `${form.tcg_card_name} — ${form.tcg_card_set_name ?? '?'} #${form.tcg_card_number ?? '?'}`
@@ -62,13 +61,13 @@ export default function ListView({ forms, loading, onSelect, onToggleEligibility
                 <td>
                   <button
                     className="hide-btn static"
-                    title={form.living_dex_eligible ? 'Ocultar da listagem' : 'Voltar a considerar esta forma'}
+                    title={isVisible ? 'Ocultar da listagem' : 'Voltar para visível'}
                     onClick={e => {
                       e.stopPropagation();
-                      onToggleEligibility(form.id, !form.living_dex_eligible);
+                      onToggleHidden(form.id, isVisible);
                     }}
                   >
-                    {form.living_dex_eligible ? '✕' : '↺'}
+                    {isVisible ? '✕' : '↺'}
                   </button>
                 </td>
               </tr>

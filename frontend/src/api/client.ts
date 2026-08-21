@@ -1,5 +1,6 @@
 import type {
-  EligibilityFilter,
+  FormStatus,
+  StatusFilter,
   Generation,
   Region,
   FormEntry,
@@ -60,19 +61,18 @@ export const api = {
     list: () => get<Region[]>('/regions'),
   },
   forms: {
-    list: (params: { generation_id?: number; region_id?: number; eligibility?: EligibilityFilter }) => {
+    list: (params: { generation_id?: number; region_id?: number; status?: StatusFilter }) => {
       const qs = new URLSearchParams();
       if (params.generation_id) qs.set('generation_id', String(params.generation_id));
       if (params.region_id) qs.set('region_id', String(params.region_id));
-      if (params.eligibility) qs.set('eligibility', params.eligibility);
+      if (params.status) qs.set('status', params.status);
       const q = qs.toString();
       return get<FormEntry[]>(`/forms${q ? '?' + q : ''}`);
     },
-    setEligibility: (formId: number, living_dex_eligible: boolean) =>
-      patch<{ id: number; living_dex_eligible: boolean; living_dex_eligible_overridden: boolean }>(
-        `/forms/${formId}/eligibility`,
-        { living_dex_eligible }
-      ),
+    setStatus: (formId: number, status: FormStatus) =>
+      patch<{ id: number; status: FormStatus; status_overridden: boolean }>(`/forms/${formId}/status`, {
+        status,
+      }),
   },
   collection: {
     update: (

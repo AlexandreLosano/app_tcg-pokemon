@@ -207,7 +207,7 @@ interface FormRow {
   region_id: number | null;
   version_group: string | null;
   sprite_url: string | null;
-  living_dex_eligible: boolean;
+  default_status: 'visible' | 'hidden';
 }
 
 async function upsertGenerationsAndRegions(ref: ReferenceData): Promise<{ generations: number; regions: number }> {
@@ -292,7 +292,7 @@ function extractRows(
         region_id: null, // preenchido depois via generation -> main_region (ver syncPokemonData)
         version_group: versionGroup?.name ?? null,
         sprite_url: formSpriteUrl,
-        living_dex_eligible: !form.is_battle_only,
+        default_status: form.is_battle_only ? 'hidden' : 'visible',
       });
     } catch (err) {
       skipped.push({
@@ -420,22 +420,19 @@ async function upsertForms(formRows: FormRow[]): Promise<void> {
     );
   }
 
-  // living_dex_eligible é setado à parte, respeitando override manual do usuário.
+  // status é setado à parte, respeitando override manual do usuário (visible/hidden/no_need/card_unavailable).
   for (const batch of chunk(formRows, 300)) {
     const values: unknown[] = [];
     const rowsSql: string[] = [];
     batch.forEach((f, i) => {
       const base = i * 2;
-      rowsSql.push(`($${base + 1}::integer, $${base + 2}::boolean)`);
-      values.push(f.pokeapi_form_id, f.living_dex_eligible);
+      rowsSql.push(`($${base + 1}::integer, $${base + 2}::varchar)`);
+      values.push(f.pokeapi_form_id, f.default_status);
     });
     await pool.query(
       `UPDATE forms AS f SET
-         living_dex_eligible = CASE WHEN f.living_dex_eligible_overridden
-                                     THEN f.living_dex_eligible
-                                     ELSE v.eligible
-                                END
-       FROM (VALUES ${rowsSql.join(',')}) AS v(pokeapi_form_id, eligible)
+         status = CASE WHEN f.status_overridden THEN f.status ELSE v.default_status END
+       FROM (VALUES ${rowsSql.join(',')}) AS v(pokeapi_form_id, default_status)
        WHERE f.pokeapi_form_id = v.pokeapi_form_id`,
       values
     );

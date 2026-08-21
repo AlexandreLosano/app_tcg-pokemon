@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import type { FormEntry } from '../types';
-import { statusClass, statusLabel, imageUrl } from '../utils/formDisplay';
+import { statusClass, statusLabel, imageUrl, formStatusLabel } from '../utils/formDisplay';
 
 interface Props {
   forms: FormEntry[];
   onSelect: (formId: number) => void;
-  onToggleEligibility: (formId: number, eligible: boolean) => void;
+  onToggleHidden: (formId: number, hide: boolean) => void;
 }
 
 const PAGE_SIZE = 9;
 
-export default function AlbumView({ forms, onSelect, onToggleEligibility }: Props) {
+export default function AlbumView({ forms, onSelect, onToggleHidden }: Props) {
   const [page, setPage] = useState(0);
 
   if (forms.length === 0) {
@@ -35,19 +35,19 @@ export default function AlbumView({ forms, onSelect, onToggleEligibility }: Prop
           form ? (
             <div
               key={form.id}
-              className={`form-card album-slot ${statusClass(form)} ${form.living_dex_eligible ? '' : 'not-eligible'}`}
+              className={`form-card album-slot ${statusClass(form)} ${form.status === 'visible' ? '' : 'not-eligible'}`}
               onClick={() => onSelect(form.id)}
               role="button"
             >
               <button
                 className="hide-btn"
-                title={form.living_dex_eligible ? 'Ocultar da listagem' : 'Voltar a considerar esta forma'}
+                title={form.status === 'visible' ? 'Ocultar da listagem' : 'Voltar para visível'}
                 onClick={e => {
                   e.stopPropagation();
-                  onToggleEligibility(form.id, !form.living_dex_eligible);
+                  onToggleHidden(form.id, form.status === 'visible');
                 }}
               >
-                {form.living_dex_eligible ? '✕' : '↺'}
+                {form.status === 'visible' ? '✕' : '↺'}
               </button>
               <div className="album-slot-art">
                 {imageUrl(form) ? (
@@ -68,6 +68,9 @@ export default function AlbumView({ forms, onSelect, onToggleEligibility }: Prop
                   </div>
                 )}
                 <span className={`status-pill ${statusClass(form)}`}>{statusLabel(form)}</span>
+                {form.status !== 'visible' && (
+                  <span className="badge form-status-badge">{formStatusLabel(form.status)}</span>
+                )}
               </div>
             </div>
           ) : (

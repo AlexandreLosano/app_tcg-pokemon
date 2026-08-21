@@ -3,7 +3,7 @@
 ## Regras Obrigatórias
 
 ### 1. Documentação de Alterações
-Toda alteração de código deve ser documentada em `/docs/alteracao_XXXX.md` (número sequencial com 4 dígitos). Próximo número: **0009**.
+Toda alteração de código deve ser documentada em `/docs/alteracao_XXXX.md` (número sequencial com 4 dígitos). Próximo número: **0010**.
 
 Formato:
 ```
@@ -73,8 +73,8 @@ Exemplos de referência:
 - **Castform**: 4 formas, todas na mesma geração/região (Hoenn/III).
 - **Unown**: 28 formas-letra sob uma única variedade — tratado corretamente porque o sync itera diretamente sobre `pokemon-form`, não assume 1 forma por variedade.
 
-### Elegibilidade (`forms.living_dex_eligible`)
-No sync, o valor inicial é `NOT is_battle_only` (vindo da PokéAPI). **Gap conhecido**: isso marca as formas de clima do Castform (Sunny/Rainy/Snowy) como não elegíveis por padrão, mesmo que o usuário queira contá-las — ajustar manualmente pelo toggle "Contar esta forma como slot separado" no painel de detalhe. Uma vez alternado manualmente, `living_dex_eligible_overridden = true` e o sync nunca mais sobrescreve esse valor.
+### Status da forma (`forms.status`)
+Quatro categorias: `visible` (padrão, conta como slot ativo), `hidden` (não conta, ex: forma cosmética), `no_need` (existe carta, mas não é prioridade comprar agora, ex: formas Mega), `card_unavailable` (quero ter, mas ainda não existe carta impressa, ex: formas recém-lançadas). No sync, o valor inicial só varia entre `visible`/`hidden`, via `NOT is_battle_only` (vindo da PokéAPI) — `no_need`/`card_unavailable` são escolhas exclusivamente manuais, nunca atribuídas pelo sync. **Gap conhecido**: isso marca as formas de clima do Castform (Sunny/Rainy/Snowy) como `hidden` por padrão, mesmo que o usuário queira contá-las — ajustar manualmente no seletor de status do painel de detalhe. Uma vez alternado manualmente (qualquer uma das 4 categorias), `status_overridden = true` e o sync nunca mais sobrescreve esse valor.
 
 ### Coleção (`collection_entries`)
 Três flags por forma — `owned`, `is_definitive`, `needs_trade` — normalizadas **no servidor** (`PUT /api/collection/:formId`, ver `backend/src/routes/collection.ts`):
@@ -136,7 +136,8 @@ app_tcg-pokemon/
         │   ├── tcgCards.ts       -- status/busca de cartas
         │   └── sync.ts
         └── migrations/
-            └── 001_initial.sql
+            ├── 001_initial.sql
+            └── 002_form_status.sql
 ```
 
 ## Rotas de Backend
@@ -146,8 +147,8 @@ app_tcg-pokemon/
 | GET | `/health` | healthcheck Docker |
 | GET | `/api/generations`, `/api/regions` | listas de referência |
 | GET | `/api/species`, `/api/species/:id` | espécies |
-| GET | `/api/forms?generation_id=&region_id=&eligibility=eligible\|all\|hidden` | endpoint principal do fichário |
-| PATCH | `/api/forms/:id/eligibility` | `{ living_dex_eligible }` |
+| GET | `/api/forms?generation_id=&region_id=&status=visible\|all\|hidden\|no_need\|card_unavailable` | endpoint principal do fichário |
+| PATCH | `/api/forms/:id/status` | `{ status }` |
 | PUT | `/api/collection/:formId` | `{ owned?, is_definitive?, needs_trade?, notes? }` |
 | POST | `/api/collection/:formId/attach-card` | anexa carta escolhida |
 | DELETE | `/api/collection/:formId/detach-card` | remove vínculo de carta |

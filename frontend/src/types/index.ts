@@ -1,4 +1,5 @@
-export type EligibilityFilter = 'eligible' | 'all' | 'hidden';
+export type FormStatus = 'visible' | 'hidden' | 'no_need' | 'card_unavailable';
+export type StatusFilter = FormStatus | 'all';
 export type ViewMode = 'grid' | 'list' | 'album';
 
 export interface Generation {
@@ -23,8 +24,8 @@ export interface FormEntry {
   is_mega: boolean;
   is_gmax: boolean;
   is_default_variety: boolean;
-  living_dex_eligible: boolean;
-  living_dex_eligible_overridden: boolean;
+  status: FormStatus;
+  status_overridden: boolean;
   generation_id: number | null;
   generation_display_name: string | null;
   region_id: number | null;

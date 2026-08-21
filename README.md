@@ -16,7 +16,7 @@ Fichário digital para acompanhar uma coleção física de cartas Pokémon TCG o
 
 - **Filtros por Geração e Região** — no nível da *forma*, não da espécie. Filtrar por Geração I mostra só o Meowth original; filtrar por Geração III/Hoenn mostra as 4 formas de Castform juntas.
 - **Botão "Atualizar"** — resincroniza espécies/formas/gerações/regiões contra a PokéAPI (idempotente, roda em poucos segundos).
-- **Elegibilidade por forma** — toggle manual (na grade, na lista ou no painel de detalhe) para incluir/excluir uma forma da Living Dex; filtro dedicado "Ocultas" para revisar tudo que já foi escondido.
+- **Status por forma** — 4 categorias: Visível (padrão), Oculta (não conta como slot), Sem necessidade (existe carta, mas não é prioridade agora — ex: formas Mega) e Sem carta ainda (quero ter, mas ainda não foi impressa). Ajustável rápido na grade/lista/fichário (✕/↺) ou com detalhe no painel da forma; cada categoria tem seu próprio filtro na toolbar.
 - **Coleção por forma** — tenho a carta / carta definitiva (não pretendo trocar) / precisa de troca / notas livres.
 - **Anexar carta física** — busca na Pokémon TCG API por nome e/ou número impresso na carta (útil quando a busca por nome não traz o print exato) e anexa a carta escolhida (arte, set, número, raridade) a cada forma.
 - **Três visões** — **Grade** (padrão, todas as formas filtradas), **Lista** (tabela compacta) e **Fichário** (9 cards por página em 3x3, com setas de navegação, simulando um álbum físico de 9 bolsos).
@@ -43,7 +43,7 @@ docker compose -p app_tcg_pokemon_dev up --build -d
 
 Acesse `http://localhost:25173` (ou a porta definida em `FRONTEND_PORT`).
 
-No primeiro uso, clique em **Atualizar** para popular o banco com os dados da PokéAPI. Depois, abra as 3 formas de clima do Castform (Sunny/Rainy/Snowy) e ative "Contar esta forma como slot separado" — esse é o único ajuste manual esperado logo após o primeiro sync.
+No primeiro uso, clique em **Atualizar** para popular o banco com os dados da PokéAPI. Depois, abra as 3 formas de clima do Castform (Sunny/Rainy/Snowy) e mude o status para "Visível" — esse é o único ajuste manual esperado logo após o primeiro sync.
 
 Para habilitar a busca de cartas, adicione uma chave gratuita da Pokémon TCG API em `POKEMON_TCG_API_KEY` no `.env` e reinicie o backend.
 

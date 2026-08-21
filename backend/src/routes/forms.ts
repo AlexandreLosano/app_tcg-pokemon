@@ -3,6 +3,8 @@ import { pool } from '../db';
 
 const router = Router();
 
+const VALID_STATUSES = ['visible', 'hidden', 'no_need', 'card_unavailable'];
+
 const SELECT_FORM_SQL = `
   SELECT
     f.id,
@@ -14,8 +16,8 @@ const SELECT_FORM_SQL = `
     f.is_mega,
     f.is_gmax,
     f.is_default_variety,
-    f.living_dex_eligible,
-    f.living_dex_eligible_overridden,
+    f.status,
+    f.status_overridden,
     f.generation_id,
     gen.display_name AS generation_display_name,
     f.region_id,
@@ -44,7 +46,7 @@ const SELECT_FORM_SQL = `
 `;
 
 router.get('/', async (req: Request, res: Response) => {
-  const { generation_id, region_id, eligibility } = req.query;
+  const { generation_id, region_id, status } = req.query;
   const conditions: string[] = [];
   const params: unknown[] = [];
 
@@ -56,10 +58,13 @@ router.get('/', async (req: Request, res: Response) => {
     params.push(Number(region_id));
     conditions.push(`f.region_id = $${params.length}`);
   }
-  if (eligibility === 'hidden') {
-    conditions.push('f.living_dex_eligible = false');
-  } else if (eligibility !== 'all') {
-    conditions.push('f.living_dex_eligible = true');
+  if (status === 'all') {
+    // sem filtro de status
+  } else if (typeof status === 'string' && VALID_STATUSES.includes(status)) {
+    params.push(status);
+    conditions.push(`f.status = $${params.length}`);
+  } else {
+    conditions.push(`f.status = 'visible'`);
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -84,17 +89,17 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.patch('/:id/eligibility', async (req: Request, res: Response) => {
-  const { living_dex_eligible } = req.body;
-  if (typeof living_dex_eligible !== 'boolean') {
-    return res.status(400).json({ error: 'living_dex_eligible (boolean) é obrigatório' });
+router.patch('/:id/status', async (req: Request, res: Response) => {
+  const { status } = req.body;
+  if (typeof status !== 'string' || !VALID_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status deve ser um de: ${VALID_STATUSES.join(', ')}` });
   }
   try {
     const { rows } = await pool.query(
-      `UPDATE forms SET living_dex_eligible = $1, living_dex_eligible_overridden = true, updated_at = now()
+      `UPDATE forms SET status = $1, status_overridden = true, updated_at = now()
        WHERE id = $2
-       RETURNING id, living_dex_eligible, living_dex_eligible_overridden`,
-      [living_dex_eligible, Number(req.params.id)]
+       RETURNING id, status, status_overridden`,
+      [status, Number(req.params.id)]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'not found' });
     res.json(rows[0]);

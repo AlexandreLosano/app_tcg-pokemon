@@ -1,4 +1,19 @@
-import type { FormEntry } from '../types';
+import type { FormEntry, FormStatus } from '../types';
+
+// Rótulo do status da FORMA (visível/oculta/sem necessidade/sem carta) — não confundir com
+// statusClass/statusLabel abaixo, que descrevem o status de POSSE da carta (tenho/definitiva/troca).
+export function formStatusLabel(status: FormStatus): string {
+  switch (status) {
+    case 'hidden':
+      return 'Oculta';
+    case 'no_need':
+      return 'Sem necessidade';
+    case 'card_unavailable':
+      return 'Sem carta ainda';
+    default:
+      return 'Visível';
+  }
+}
 
 export function statusClass(form: FormEntry): string {
   if (!form.owned) return 'status-missing';
