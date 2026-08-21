@@ -12,14 +12,18 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
   const [notes, setNotes] = useState(form.notes ?? '');
   const [tcgConfigured, setTcgConfigured] = useState<boolean | null>(null);
   const [query, setQuery] = useState(form.display_name);
+  const [numberQuery, setNumberQuery] = useState('');
   const [results, setResults] = useState<TcgCardSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
     setNotes(form.notes ?? '');
     setQuery(form.display_name);
+    setNumberQuery('');
     setResults([]);
+    setHasSearched(false);
   }, [form.id]);
 
   useEffect(() => {
@@ -53,12 +57,13 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
   };
 
   const handleSearch = async () => {
-    if (!query.trim()) return;
+    if (!query.trim() && !numberQuery.trim()) return;
     setSearching(true);
     setSearchError(null);
     try {
-      const cards = await api.tcgCards.search(query.trim());
+      const cards = await api.tcgCards.search({ name: query.trim(), number: numberQuery.trim() });
       setResults(cards);
+      setHasSearched(true);
     } catch (err) {
       setSearchError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -188,18 +193,38 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  placeholder="Buscar carta por nome…"
+                  placeholder="Nome da carta…"
                 />
-                <button className="btn-small" onClick={handleSearch} disabled={searching}>
+                <input
+                  className="search-number-input"
+                  value={numberQuery}
+                  onChange={e => setNumberQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                  placeholder="Número (ex: 58)"
+                />
+                <button
+                  className="btn-small"
+                  onClick={handleSearch}
+                  disabled={searching || (!query.trim() && !numberQuery.trim())}
+                >
                   {searching ? 'Buscando…' : 'Buscar'}
                 </button>
               </div>
+              <div className="search-hint">
+                Não achou a carta que você tem? Apague o nome e busque só pelo número impresso na carta — ou
+                combine os dois para achar o print exato.
+              </div>
               {searchError && <div className="sync-summary error">{searchError}</div>}
+              {!searching && hasSearched && results.length === 0 && !searchError && (
+                <div className="search-hint">
+                  Nenhum resultado. Tente um nome mais curto, só o número, ou confira a grafia.
+                </div>
+              )}
               <div className="search-results">
                 {results.map(card => (
                   <div key={card.id} className="search-result" onClick={() => handleAttach(card)}>
                     <img src={card.images.small} alt={card.name} />
-                    {card.name} — {card.set?.name}
+                    {card.name} — {card.set?.name} #{card.number}
                   </div>
                 ))}
               </div>

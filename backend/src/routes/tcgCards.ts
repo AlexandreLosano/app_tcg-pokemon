@@ -12,9 +12,10 @@ router.get('/search', async (req: Request, res: Response) => {
     return res.status(503).json({ error: 'tcg_api_not_configured' });
   }
   const name = String(req.query.name ?? '').trim();
-  if (!name) return res.status(400).json({ error: 'parâmetro name é obrigatório' });
+  const number = String(req.query.number ?? '').trim();
+  if (!name && !number) return res.status(400).json({ error: 'informe ao menos name ou number' });
   try {
-    const results = await searchCards(name);
+    const results = await searchCards({ name, number });
     res.json(results);
   } catch (err) {
     res.status(502).json({ error: String(err) });

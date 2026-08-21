@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { EligibilityFilter, Generation, Region, FormEntry, SyncSummary } from '../types';
+import type { EligibilityFilter, Generation, Region, FormEntry, SyncSummary, ViewMode } from '../types';
 import Toolbar from './Toolbar';
 import BinderGrid from './BinderGrid';
+import ListView from './ListView';
+import AlbumView from './AlbumView';
 import FormDetailPanel from './FormDetailPanel';
 
 function matchesEligibilityFilter(form: FormEntry, eligibility: EligibilityFilter): boolean {
@@ -20,6 +22,7 @@ export default function BinderPage() {
   const [generationId, setGenerationId] = useState<number | undefined>(undefined);
   const [regionId, setRegionId] = useState<number | undefined>(undefined);
   const [eligibility, setEligibility] = useState<EligibilityFilter>('eligible');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   const [selectedFormId, setSelectedFormId] = useState<number | null>(null);
 
@@ -101,20 +104,41 @@ export default function BinderPage() {
         generationId={generationId}
         regionId={regionId}
         eligibility={eligibility}
+        viewMode={viewMode}
         onGenerationChange={setGenerationId}
         onRegionChange={setRegionId}
         onEligibilityChange={setEligibility}
+        onViewModeChange={setViewMode}
         onSync={handleSync}
         syncing={syncing}
         syncResult={syncResult}
         syncError={syncError}
       />
-      <BinderGrid
-        forms={forms}
-        loading={loading}
-        onSelect={id => setSelectedFormId(id)}
-        onToggleEligibility={handleToggleEligibility}
-      />
+      {viewMode === 'grid' && (
+        <BinderGrid
+          forms={forms}
+          loading={loading}
+          onSelect={id => setSelectedFormId(id)}
+          onToggleEligibility={handleToggleEligibility}
+        />
+      )}
+      {viewMode === 'list' && (
+        <ListView
+          forms={forms}
+          loading={loading}
+          onSelect={id => setSelectedFormId(id)}
+          onToggleEligibility={handleToggleEligibility}
+        />
+      )}
+      {viewMode === 'album' && !loading && (
+        <AlbumView
+          key={`${generationId}-${regionId}-${eligibility}`}
+          forms={forms}
+          onSelect={id => setSelectedFormId(id)}
+          onToggleEligibility={handleToggleEligibility}
+        />
+      )}
+      {viewMode === 'album' && loading && <div className="empty-state">Carregando…</div>}
       {selectedForm && (
         <FormDetailPanel
           form={selectedForm}

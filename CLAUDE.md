@@ -3,7 +3,7 @@
 ## Regras Obrigatórias
 
 ### 1. Documentação de Alterações
-Toda alteração de código deve ser documentada em `/docs/alteracao_XXXX.md` (número sequencial com 4 dígitos). Próximo número: **0006**.
+Toda alteração de código deve ser documentada em `/docs/alteracao_XXXX.md` (número sequencial com 4 dígitos). Próximo número: **0007**.
 
 Formato:
 ```
@@ -111,10 +111,13 @@ app_tcg-pokemon/
 │       ├── index.css
 │       ├── types/index.ts
 │       ├── api/client.ts
+│       ├── utils/formDisplay.ts  -- statusClass/statusLabel/imageUrl, reusado pelas 3 views
 │       └── components/
 │           ├── BinderPage.tsx
-│           ├── Toolbar.tsx
-│           ├── BinderGrid.tsx
+│           ├── Toolbar.tsx        -- inclui o seletor Grade/Lista/Fichário
+│           ├── BinderGrid.tsx     -- visão em grade (padrão)
+│           ├── ListView.tsx       -- visão em lista/tabela
+│           ├── AlbumView.tsx      -- visão de fichário, 9 cards por página em 3x3
 │           └── FormDetailPanel.tsx
 └── backend/
     ├── Dockerfile
@@ -149,5 +152,5 @@ app_tcg-pokemon/
 | POST | `/api/collection/:formId/attach-card` | anexa carta escolhida |
 | DELETE | `/api/collection/:formId/detach-card` | remove vínculo de carta |
 | GET | `/api/tcg-cards/status` | `{ configured: boolean }` |
-| GET | `/api/tcg-cards/search?name=` | proxy de busca na Pokémon TCG API |
+| GET | `/api/tcg-cards/search?name=&number=` | proxy de busca na Pokémon TCG API (ao menos um dos dois) |
 | POST | `/api/sync/pokemon` | roda o sync completo contra a PokéAPI |

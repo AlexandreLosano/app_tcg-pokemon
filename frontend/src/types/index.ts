@@ -1,4 +1,5 @@
 export type EligibilityFilter = 'eligible' | 'all' | 'hidden';
+export type ViewMode = 'grid' | 'list' | 'album';
 
 export interface Generation {
   id: number;

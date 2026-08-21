@@ -1,21 +1,11 @@
 import type { FormEntry } from '../types';
+import { statusClass, imageUrl } from '../utils/formDisplay';
 
 interface Props {
   forms: FormEntry[];
   loading: boolean;
   onSelect: (formId: number) => void;
   onToggleEligibility: (formId: number, eligible: boolean) => void;
-}
-
-function statusClass(form: FormEntry): string {
-  if (!form.owned) return 'status-missing';
-  if (form.is_definitive) return 'status-definitive';
-  if (form.needs_trade) return 'status-trade';
-  return 'status-owned';
-}
-
-function imageUrl(form: FormEntry): string | null {
-  return form.tcg_card_image_small_url ?? form.sprite_url ?? form.species_sprite_default_url ?? null;
 }
 
 export default function BinderGrid({ forms, loading, onSelect, onToggleEligibility }: Props) {

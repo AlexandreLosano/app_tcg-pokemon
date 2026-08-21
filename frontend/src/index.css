@@ -80,6 +80,31 @@ button {
   flex: 1;
 }
 
+.view-switch {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.view-switch-btn {
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-right: 1px solid var(--border);
+}
+
+.view-switch-btn:last-child {
+  border-right: none;
+}
+
+.view-switch-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
 .sync-button {
   background: var(--accent);
   color: #fff;
@@ -344,14 +369,29 @@ button {
   margin-bottom: 10px;
 }
 
+.search-box {
+  flex-wrap: wrap;
+}
+
 .search-box input {
-  flex: 1;
+  flex: 1 1 140px;
+  min-width: 0;
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 8px;
   font-size: 13px;
+}
+
+.search-box .search-number-input {
+  flex: 0 1 90px;
+}
+
+.search-hint {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
 }
 
 .search-results {
@@ -389,4 +429,152 @@ button {
   background: var(--surface-2);
   border-radius: 6px;
   padding: 10px;
+}
+
+/* List view */
+.list-view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 20px;
+}
+
+.forms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.forms-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  text-align: left;
+  color: var(--text-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.forms-table tbody tr {
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+}
+
+.forms-table tbody tr:hover {
+  background: var(--surface);
+}
+
+.forms-table tbody tr.not-eligible {
+  opacity: 0.45;
+}
+
+.forms-table tr.status-definitive {
+  border-left-color: var(--green);
+}
+
+.forms-table tr.status-trade {
+  border-left-color: var(--orange);
+}
+
+.forms-table tr.status-owned {
+  border-left-color: var(--gray);
+}
+
+.forms-table tr.status-missing {
+  border-left-color: var(--red);
+}
+
+.forms-table td {
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+.list-thumb img,
+.list-thumb .form-card-placeholder {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  background: var(--surface-2);
+  border-radius: 4px;
+  display: block;
+}
+
+.status-pill {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text-dim);
+}
+
+.status-pill.status-definitive {
+  color: var(--green);
+}
+
+.status-pill.status-trade {
+  color: var(--orange);
+}
+
+.status-pill.status-missing {
+  color: var(--red);
+}
+
+.hide-btn.static {
+  position: static;
+  opacity: 0.7;
+}
+
+.hide-btn.static:hover {
+  opacity: 1;
+}
+
+/* Album / fichário view */
+.album-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 20px;
+  gap: 14px;
+}
+
+.album-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 20px;
+  min-height: 0;
+}
+
+.album-slot {
+  justify-content: center;
+}
+
+.album-slot img {
+  width: 120px;
+  height: 120px;
+}
+
+.album-slot .name {
+  font-size: 14px;
+}
+
+.album-slot-empty {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  opacity: 0.25;
+}
+
+.album-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  font-size: 13px;
+  color: var(--text-dim);
 }

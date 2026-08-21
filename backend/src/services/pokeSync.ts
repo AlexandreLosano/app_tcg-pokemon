@@ -23,9 +23,9 @@ async function graphqlRequest<T>(query: string): Promise<T> {
         body: JSON.stringify({ query }),
       });
       if (!res.ok) throw new Error(`GraphQL request failed: ${res.status}`);
-      const json = await res.json();
+      const json = (await res.json()) as { data: T; errors?: unknown };
       if (json.errors) throw new Error(`GraphQL errors: ${JSON.stringify(json.errors)}`);
-      return json.data as T;
+      return json.data;
     } catch (err) {
       lastErr = err;
       if (attempt < 2) await new Promise(r => setTimeout(r, 1000));

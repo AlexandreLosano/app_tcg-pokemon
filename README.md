@@ -16,10 +16,10 @@ Fichário digital para acompanhar uma coleção física de cartas Pokémon TCG o
 
 - **Filtros por Geração e Região** — no nível da *forma*, não da espécie. Filtrar por Geração I mostra só o Meowth original; filtrar por Geração III/Hoenn mostra as 4 formas de Castform juntas.
 - **Botão "Atualizar"** — resincroniza espécies/formas/gerações/regiões contra a PokéAPI (idempotente, roda em poucos segundos).
-- **Elegibilidade por forma** — toggle manual para incluir/excluir uma forma da Living Dex (necessário porque a PokéAPI marca formas cosméticas, como as de clima do Castform, como não elegíveis por padrão).
+- **Elegibilidade por forma** — toggle manual (na grade, na lista ou no painel de detalhe) para incluir/excluir uma forma da Living Dex; filtro dedicado "Ocultas" para revisar tudo que já foi escondido.
 - **Coleção por forma** — tenho a carta / carta definitiva (não pretendo trocar) / precisa de troca / notas livres.
-- **Anexar carta física** — busca na Pokémon TCG API e anexa a carta exata (arte, set, número, raridade) a cada forma.
-- **Fichário visual** — grid com a arte da carta anexada (ou sprite da PokéAPI como fallback), com cor de borda indicando o status de cada slot.
+- **Anexar carta física** — busca na Pokémon TCG API por nome e/ou número impresso na carta (útil quando a busca por nome não traz o print exato) e anexa a carta escolhida (arte, set, número, raridade) a cada forma.
+- **Três visões** — **Grade** (padrão, todas as formas filtradas), **Lista** (tabela compacta) e **Fichário** (9 cards por página em 3x3, com setas de navegação, simulando um álbum físico de 9 bolsos).
 
 ## Modelo de dados
 

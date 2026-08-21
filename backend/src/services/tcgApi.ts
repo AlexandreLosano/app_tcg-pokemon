@@ -39,11 +39,14 @@ export interface TcgCardSearchResult {
   images: { small: string; large?: string };
 }
 
-export async function searchCards(name: string): Promise<TcgCardSearchResult[]> {
-  const query = encodeURIComponent(`name:"${name}*"`);
-  const url = `${TCG_API_BASE}/cards?q=${query}&pageSize=25&orderBy=-set.releaseDate`;
+export async function searchCards(params: { name?: string; number?: string }): Promise<TcgCardSearchResult[]> {
+  const parts: string[] = [];
+  if (params.name?.trim()) parts.push(`name:"${params.name.trim()}*"`);
+  if (params.number?.trim()) parts.push(`number:${params.number.trim()}`);
+  const query = encodeURIComponent(parts.join(' '));
+  const url = `${TCG_API_BASE}/cards?q=${query}&pageSize=50&orderBy=-set.releaseDate`;
   const res = await fetchWithRetry(url);
   if (!res.ok) throw new Error(`TCG API respondeu ${res.status}`);
-  const json = await res.json();
-  return (json.data ?? []) as TcgCardSearchResult[];
+  const json = (await res.json()) as { data?: TcgCardSearchResult[] };
+  return json.data ?? [];
 }

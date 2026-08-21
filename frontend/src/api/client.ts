@@ -85,7 +85,12 @@ export const api = {
   },
   tcgCards: {
     status: () => get<{ configured: boolean }>('/tcg-cards/status'),
-    search: (name: string) => get<TcgCardSearchResult[]>(`/tcg-cards/search?name=${encodeURIComponent(name)}`),
+    search: (params: { name?: string; number?: string }) => {
+      const qs = new URLSearchParams();
+      if (params.name) qs.set('name', params.name);
+      if (params.number) qs.set('number', params.number);
+      return get<TcgCardSearchResult[]>(`/tcg-cards/search?${qs.toString()}`);
+    },
   },
   sync: {
     run: () => post<SyncSummary>('/sync/pokemon'),
