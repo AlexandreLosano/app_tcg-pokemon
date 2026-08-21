@@ -3,7 +3,7 @@
 ## Regras Obrigatórias
 
 ### 1. Documentação de Alterações
-Toda alteração de código deve ser documentada em `/docs/alteracao_XXXX.md` (número sequencial com 4 dígitos). Próximo número: **0010**.
+Toda alteração de código deve ser documentada em `/docs/alteracao_XXXX.md` (número sequencial com 4 dígitos). Próximo número: **0011**.
 
 Formato:
 ```
@@ -89,6 +89,9 @@ Cache local da carta escolhida pelo usuário via busca na Pokémon TCG API. Anex
 
 ### Chave da Pokémon TCG API
 Opcional (`POKEMON_TCG_API_KEY` em `.env`). Sem ela, `GET /api/tcg-cards/status` retorna `configured: false` e a busca fica desabilitada na UI — o resto do app funciona normalmente. Obter uma chave gratuita em https://dev.pokemontcg.io (sem chave: 1000 req/dia; com chave: 20.000 req/dia).
+
+### Slots sintéticos (forma sem `pokemon-form` real na PokéAPI)
+Caso raro: quando o usuário quer um slot "geral" além das formas reais (ex: `unown-general`, representando o Unown como um todo além das 28 letras). Não faz parte do sync — inserido manualmente com `pokeapi_form_id` **negativo** (`-species_id`), o que garante que nunca colide com um id real (sempre positivo) e nunca é tocado pelo `ON CONFLICT` do sync. Precisa de uma linha correspondente em `collection_entries` inserida manualmente também (o sync só faz backfill para forms que ele mesmo insere). Ver `docs/alteracao_0010.md` para o caso concreto.
 
 ---
 

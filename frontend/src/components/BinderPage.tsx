@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { StatusFilter, Generation, Region, FormEntry, SyncSummary, ViewMode } from '../types';
+import type { FormStatus, StatusFilter, Generation, Region, FormEntry, SyncSummary, ViewMode } from '../types';
 import Toolbar from './Toolbar';
 import BinderGrid from './BinderGrid';
 import ListView from './ListView';
@@ -90,6 +90,16 @@ export default function BinderPage() {
     });
   };
 
+  // Ação em lote da Lista: aplica um status a vários ids de uma vez.
+  const handleBulkSetStatus = async (formIds: number[], newStatus: FormStatus) => {
+    await Promise.all(formIds.map(id => api.forms.setStatus(id, newStatus)));
+    setForms(prev => {
+      const idSet = new Set(formIds);
+      const updated = prev.map(f => (idSet.has(f.id) ? { ...f, status: newStatus, status_overridden: true } : f));
+      return updated.filter(f => !idSet.has(f.id) || matchesStatusFilter(f, status));
+    });
+  };
+
   return (
     <div className="app">
       <Toolbar
@@ -122,6 +132,7 @@ export default function BinderPage() {
           loading={loading}
           onSelect={id => setSelectedFormId(id)}
           onToggleHidden={handleToggleHidden}
+          onBulkSetStatus={handleBulkSetStatus}
         />
       )}
       {viewMode === 'album' && !loading && (

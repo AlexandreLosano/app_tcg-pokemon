@@ -506,6 +506,38 @@ button {
   padding: 0 20px 20px;
 }
 
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 14px 0;
+  font-size: 13px;
+}
+
+.bulk-bar-label {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.list-checkbox-col {
+  width: 28px;
+  text-align: center;
+}
+
+.row-selected {
+  background: rgba(108, 139, 255, 0.12);
+}
+
 .forms-table {
   width: 100%;
   border-collapse: collapse;

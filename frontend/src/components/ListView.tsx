@@ -1,4 +1,5 @@
-import type { FormEntry } from '../types';
+import { useEffect, useState } from 'react';
+import type { FormEntry, FormStatus } from '../types';
 import { statusClass, statusLabel, imageUrl, formStatusLabel } from '../utils/formDisplay';
 
 interface Props {
@@ -6,9 +7,26 @@ interface Props {
   loading: boolean;
   onSelect: (formId: number) => void;
   onToggleHidden: (formId: number, hide: boolean) => void;
+  onBulkSetStatus: (formIds: number[], status: FormStatus) => Promise<void>;
 }
 
-export default function ListView({ forms, loading, onSelect, onToggleHidden }: Props) {
+const BULK_STATUS_OPTIONS: { value: FormStatus; label: string }[] = [
+  { value: 'visible', label: 'Visível' },
+  { value: 'no_need', label: 'Sem necessidade' },
+  { value: 'card_unavailable', label: 'Sem carta ainda' },
+  { value: 'hidden', label: 'Oculta' },
+];
+
+export default function ListView({ forms, loading, onSelect, onToggleHidden, onBulkSetStatus }: Props) {
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [applying, setApplying] = useState(false);
+
+  // Um novo carregamento (troca de filtro) invalida a seleção; edições pontuais no painel
+  // de detalhe (que não passam por "loading") não devem mexer na seleção do usuário.
+  useEffect(() => {
+    if (loading) setSelectedIds(new Set());
+  }, [loading]);
+
   if (loading) {
     return <div className="empty-state">Carregando…</div>;
   }
@@ -22,11 +40,61 @@ export default function ListView({ forms, loading, onSelect, onToggleHidden }: P
     );
   }
 
+  const allSelected = forms.length > 0 && forms.every(f => selectedIds.has(f.id));
+
+  const toggleOne = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setSelectedIds(prev => (allSelected ? new Set() : new Set(forms.map(f => f.id))));
+  };
+
+  const applyBulkStatus = async (status: FormStatus) => {
+    setApplying(true);
+    try {
+      await onBulkSetStatus([...selectedIds], status);
+      setSelectedIds(new Set());
+    } finally {
+      setApplying(false);
+    }
+  };
+
   return (
     <div className="list-view">
+      {selectedIds.size > 0 && (
+        <div className="bulk-bar">
+          <span>{selectedIds.size} selecionada(s)</span>
+          <span className="bulk-bar-label">Marcar como:</span>
+          <div className="bulk-actions">
+            {BULK_STATUS_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                className="btn-small"
+                disabled={applying}
+                onClick={() => applyBulkStatus(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="spacer" />
+          <button className="btn-small" disabled={applying} onClick={() => setSelectedIds(new Set())}>
+            Limpar seleção
+          </button>
+        </div>
+      )}
       <table className="forms-table">
         <thead>
           <tr>
+            <th className="list-checkbox-col">
+              <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+            </th>
             <th></th>
             <th>Pokémon</th>
             <th>Geração</th>
@@ -42,7 +110,16 @@ export default function ListView({ forms, loading, onSelect, onToggleHidden }: P
             const img = imageUrl(form);
             const isVisible = form.status === 'visible';
             return (
-              <tr key={form.id} className={`${statusClass(form)} ${isVisible ? '' : 'not-eligible'}`} onClick={() => onSelect(form.id)}>
+              <tr
+                key={form.id}
+                className={`${statusClass(form)} ${isVisible ? '' : 'not-eligible'} ${
+                  selectedIds.has(form.id) ? 'row-selected' : ''
+                }`}
+                onClick={() => onSelect(form.id)}
+              >
+                <td className="list-checkbox-col" onClick={e => e.stopPropagation()}>
+                  <input type="checkbox" checked={selectedIds.has(form.id)} onChange={() => toggleOne(form.id)} />
+                </td>
                 <td className="list-thumb">
                   {img ? <img src={img} alt={form.display_name} /> : <div className="form-card-placeholder" />}
                 </td>
