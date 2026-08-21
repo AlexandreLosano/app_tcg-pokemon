@@ -11,14 +11,14 @@ interface Props {
 export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
   const [notes, setNotes] = useState(form.notes ?? '');
   const [tcgConfigured, setTcgConfigured] = useState<boolean | null>(null);
-  const [query, setQuery] = useState(form.species_display_name);
+  const [query, setQuery] = useState(form.display_name);
   const [results, setResults] = useState<TcgCardSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
     setNotes(form.notes ?? '');
-    setQuery(form.species_display_name);
+    setQuery(form.display_name);
     setResults([]);
   }, [form.id]);
 
