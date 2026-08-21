@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { FormStatus, StatusFilter, Generation, Region, FormEntry, SyncSummary, ViewMode } from '../types';
+import { hasNoRegistration } from '../utils/formDisplay';
 import Toolbar from './Toolbar';
 import BinderGrid from './BinderGrid';
 import ListView from './ListView';
@@ -21,6 +22,7 @@ export default function BinderPage() {
   const [generationId, setGenerationId] = useState<number | undefined>(undefined);
   const [regionId, setRegionId] = useState<number | undefined>(undefined);
   const [status, setStatus] = useState<StatusFilter>('visible');
+  const [onlyBlank, setOnlyBlank] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   const [selectedFormId, setSelectedFormId] = useState<number | null>(null);
@@ -70,6 +72,7 @@ export default function BinderPage() {
   };
 
   const selectedForm = forms.find(f => f.id === selectedFormId) ?? null;
+  const visibleForms = onlyBlank ? forms.filter(hasNoRegistration) : forms;
 
   const handleFormUpdated = (updated: FormEntry) => {
     setForms(prev => {
@@ -108,10 +111,12 @@ export default function BinderPage() {
         generationId={generationId}
         regionId={regionId}
         status={status}
+        onlyBlank={onlyBlank}
         viewMode={viewMode}
         onGenerationChange={setGenerationId}
         onRegionChange={setRegionId}
         onStatusChange={setStatus}
+        onOnlyBlankChange={setOnlyBlank}
         onViewModeChange={setViewMode}
         onSync={handleSync}
         syncing={syncing}
@@ -120,7 +125,7 @@ export default function BinderPage() {
       />
       {viewMode === 'grid' && (
         <BinderGrid
-          forms={forms}
+          forms={visibleForms}
           loading={loading}
           onSelect={id => setSelectedFormId(id)}
           onToggleHidden={handleToggleHidden}
@@ -128,7 +133,7 @@ export default function BinderPage() {
       )}
       {viewMode === 'list' && (
         <ListView
-          forms={forms}
+          forms={visibleForms}
           loading={loading}
           onSelect={id => setSelectedFormId(id)}
           onToggleHidden={handleToggleHidden}
@@ -137,8 +142,8 @@ export default function BinderPage() {
       )}
       {viewMode === 'album' && !loading && (
         <AlbumView
-          key={`${generationId}-${regionId}-${status}`}
-          forms={forms}
+          key={`${generationId}-${regionId}-${status}-${onlyBlank}`}
+          forms={visibleForms}
           onSelect={id => setSelectedFormId(id)}
           onToggleHidden={handleToggleHidden}
         />

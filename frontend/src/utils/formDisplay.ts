@@ -32,3 +32,10 @@ export function statusLabel(form: FormEntry): string {
 export function imageUrl(form: FormEntry): string | null {
   return form.tcg_card_image_small_url ?? form.sprite_url ?? form.species_sprite_default_url ?? null;
 }
+
+// true quando o usuário ainda não mexeu em nada nessa forma: não marcou como tenho, não
+// anexou carta, não escreveu nota. is_definitive/needs_trade não precisam ser checados —
+// a normalização do servidor já garante que ficam false quando owned é false.
+export function hasNoRegistration(form: FormEntry): boolean {
+  return !form.owned && !form.tcg_card_id && !(form.notes && form.notes.trim());
+}

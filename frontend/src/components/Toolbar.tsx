@@ -6,10 +6,12 @@ interface Props {
   generationId: number | undefined;
   regionId: number | undefined;
   status: StatusFilter;
+  onlyBlank: boolean;
   viewMode: ViewMode;
   onGenerationChange: (id: number | undefined) => void;
   onRegionChange: (id: number | undefined) => void;
   onStatusChange: (value: StatusFilter) => void;
+  onOnlyBlankChange: (value: boolean) => void;
   onViewModeChange: (value: ViewMode) => void;
   onSync: () => void;
   syncing: boolean;
@@ -29,10 +31,12 @@ export default function Toolbar({
   generationId,
   regionId,
   status,
+  onlyBlank,
   viewMode,
   onGenerationChange,
   onRegionChange,
   onStatusChange,
+  onOnlyBlankChange,
   onViewModeChange,
   onSync,
   syncing,
@@ -82,6 +86,11 @@ export default function Toolbar({
           <option value="no_need">Sem necessidade</option>
           <option value="card_unavailable">Sem carta ainda</option>
         </select>
+      </label>
+
+      <label>
+        <input type="checkbox" checked={onlyBlank} onChange={e => onOnlyBlankChange(e.target.checked)} />
+        Sem cadastro
       </label>
 
       <div className="view-switch">
