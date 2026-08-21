@@ -3,7 +3,7 @@
 ## Regras Obrigatórias
 
 ### 1. Documentação de Alterações
-Toda alteração de código deve ser documentada em `/docs/alteracao_XXXX.md` (número sequencial com 4 dígitos). Próximo número: **0007**.
+Toda alteração de código deve ser documentada em `/docs/alteracao_XXXX.md` (número sequencial com 4 dígitos). Próximo número: **0008**.
 
 Formato:
 ```
@@ -152,5 +152,6 @@ app_tcg-pokemon/
 | POST | `/api/collection/:formId/attach-card` | anexa carta escolhida |
 | DELETE | `/api/collection/:formId/detach-card` | remove vínculo de carta |
 | GET | `/api/tcg-cards/status` | `{ configured: boolean }` |
-| GET | `/api/tcg-cards/search?name=&number=` | proxy de busca na Pokémon TCG API (ao menos um dos dois) |
+| GET | `/api/tcg-cards/rarities` | lista de raridades válidas (proxy `GET /v2/rarities`) |
+| GET | `/api/tcg-cards/search?name=&number=&rarity=` | proxy de busca na Pokémon TCG API (ao menos um dos três) |
 | POST | `/api/sync/pokemon` | roda o sync completo contra a PokéAPI |

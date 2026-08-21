@@ -8,11 +8,24 @@ interface Props {
   onUpdated: (form: FormEntry) => void;
 }
 
+// A Pokémon TCG API tem dezenas de raridades distintas (Common, Rare Holo GX, Rare Secret, ...).
+// Agrupamos visualmente com um símbolo, mas o filtro em si usa a string exata da API.
+function raritySymbol(rarity: string): string {
+  const r = rarity.toLowerCase();
+  if (r.includes('promo')) return '🎟';
+  if (r === 'common') return '●';
+  if (r === 'uncommon') return '◆';
+  if (r === 'rare') return '★';
+  return '✦'; // holo, ex, gx, v, vmax, secret, ultra, rainbow, amazing, shiny, prime, ace, legend...
+}
+
 export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
   const [notes, setNotes] = useState(form.notes ?? '');
   const [tcgConfigured, setTcgConfigured] = useState<boolean | null>(null);
   const [query, setQuery] = useState(form.display_name);
   const [numberQuery, setNumberQuery] = useState('');
+  const [rarityFilter, setRarityFilter] = useState('');
+  const [rarities, setRarities] = useState<string[]>([]);
   const [results, setResults] = useState<TcgCardSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -22,12 +35,16 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
     setNotes(form.notes ?? '');
     setQuery(form.display_name);
     setNumberQuery('');
+    setRarityFilter('');
     setResults([]);
     setHasSearched(false);
   }, [form.id]);
 
   useEffect(() => {
-    api.tcgCards.status().then(s => setTcgConfigured(s.configured));
+    api.tcgCards.status().then(s => {
+      setTcgConfigured(s.configured);
+      if (s.configured) api.tcgCards.rarities().then(setRarities).catch(() => setRarities([]));
+    });
   }, []);
 
   const updateCollection = async (patch: Partial<{ owned: boolean; is_definitive: boolean; needs_trade: boolean }>) => {
@@ -57,11 +74,15 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
   };
 
   const handleSearch = async () => {
-    if (!query.trim() && !numberQuery.trim()) return;
+    if (!query.trim() && !numberQuery.trim() && !rarityFilter) return;
     setSearching(true);
     setSearchError(null);
     try {
-      const cards = await api.tcgCards.search({ name: query.trim(), number: numberQuery.trim() });
+      const cards = await api.tcgCards.search({
+        name: query.trim(),
+        number: numberQuery.trim(),
+        rarity: rarityFilter,
+      });
       setResults(cards);
       setHasSearched(true);
     } catch (err) {
@@ -176,7 +197,7 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
               <div className="details">
                 <strong>{form.tcg_card_name}</strong>
                 {form.tcg_card_set_name} · #{form.tcg_card_number}
-                {form.tcg_card_rarity ? ` · ${form.tcg_card_rarity}` : ''}
+                {form.tcg_card_rarity ? ` · ${raritySymbol(form.tcg_card_rarity)} ${form.tcg_card_rarity}` : ''}
               </div>
               <button className="btn-small danger" onClick={handleDetach}>
                 Remover
@@ -205,14 +226,29 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
                 <button
                   className="btn-small"
                   onClick={handleSearch}
-                  disabled={searching || (!query.trim() && !numberQuery.trim())}
+                  disabled={searching || (!query.trim() && !numberQuery.trim() && !rarityFilter)}
                 >
                   {searching ? 'Buscando…' : 'Buscar'}
                 </button>
               </div>
+              {rarities.length > 0 && (
+                <div className="search-filter-row">
+                  <label>
+                    Raridade
+                    <select value={rarityFilter} onChange={e => setRarityFilter(e.target.value)}>
+                      <option value="">Todas</option>
+                      {rarities.map(r => (
+                        <option key={r} value={r}>
+                          {raritySymbol(r)} {r}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
               <div className="search-hint">
-                Não achou a carta que você tem? Apague o nome e busque só pelo número impresso na carta — ou
-                combine os dois para achar o print exato.
+                Não achou a carta que você tem? Apague o nome e busque só pelo número impresso na carta, filtre
+                por raridade, ou combine os três para achar o print exato.
               </div>
               {searchError && <div className="sync-summary error">{searchError}</div>}
               {!searching && hasSearched && results.length === 0 && !searchError && (
@@ -224,7 +260,8 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
                 {results.map(card => (
                   <div key={card.id} className="search-result" onClick={() => handleAttach(card)}>
                     <img src={card.images.small} alt={card.name} />
-                    {card.name} — {card.set?.name} #{card.number}
+                    {card.rarity && <span className="rarity-tag">{raritySymbol(card.rarity)}</span>} {card.name} —{' '}
+                    {card.set?.name} #{card.number}
                   </div>
                 ))}
               </div>

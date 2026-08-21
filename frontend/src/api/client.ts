@@ -85,10 +85,12 @@ export const api = {
   },
   tcgCards: {
     status: () => get<{ configured: boolean }>('/tcg-cards/status'),
-    search: (params: { name?: string; number?: string }) => {
+    rarities: () => get<string[]>('/tcg-cards/rarities'),
+    search: (params: { name?: string; number?: string; rarity?: string }) => {
       const qs = new URLSearchParams();
       if (params.name) qs.set('name', params.name);
       if (params.number) qs.set('number', params.number);
+      if (params.rarity) qs.set('rarity', params.rarity);
       return get<TcgCardSearchResult[]>(`/tcg-cards/search?${qs.toString()}`);
     },
   },

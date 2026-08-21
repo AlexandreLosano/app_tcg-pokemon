@@ -365,12 +365,9 @@ button {
 
 .search-box {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 10px;
-}
-
-.search-box {
-  flex-wrap: wrap;
 }
 
 .search-box input {
@@ -386,6 +383,32 @@ button {
 
 .search-box .search-number-input {
   flex: 0 1 90px;
+}
+
+.search-filter-row {
+  margin-bottom: 10px;
+}
+
+.search-filter-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.search-filter-row select {
+  flex: 1;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12.5px;
+}
+
+.rarity-tag {
+  color: var(--accent);
 }
 
 .search-hint {

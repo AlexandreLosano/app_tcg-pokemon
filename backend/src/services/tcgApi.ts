@@ -39,14 +39,26 @@ export interface TcgCardSearchResult {
   images: { small: string; large?: string };
 }
 
-export async function searchCards(params: { name?: string; number?: string }): Promise<TcgCardSearchResult[]> {
+export async function searchCards(params: {
+  name?: string;
+  number?: string;
+  rarity?: string;
+}): Promise<TcgCardSearchResult[]> {
   const parts: string[] = [];
   if (params.name?.trim()) parts.push(`name:"${params.name.trim()}*"`);
   if (params.number?.trim()) parts.push(`number:${params.number.trim()}`);
+  if (params.rarity?.trim()) parts.push(`rarity:"${params.rarity.trim()}"`);
   const query = encodeURIComponent(parts.join(' '));
   const url = `${TCG_API_BASE}/cards?q=${query}&pageSize=50&orderBy=-set.releaseDate`;
   const res = await fetchWithRetry(url);
   if (!res.ok) throw new Error(`TCG API respondeu ${res.status}`);
   const json = (await res.json()) as { data?: TcgCardSearchResult[] };
+  return json.data ?? [];
+}
+
+export async function listRarities(): Promise<string[]> {
+  const res = await fetchWithRetry(`${TCG_API_BASE}/rarities`);
+  if (!res.ok) throw new Error(`TCG API respondeu ${res.status}`);
+  const json = (await res.json()) as { data?: string[] };
   return json.data ?? [];
 }
