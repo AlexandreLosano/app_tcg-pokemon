@@ -1,4 +1,5 @@
 import type {
+  EligibilityFilter,
   Generation,
   Region,
   FormEntry,
@@ -59,11 +60,11 @@ export const api = {
     list: () => get<Region[]>('/regions'),
   },
   forms: {
-    list: (params: { generation_id?: number; region_id?: number; eligible_only?: boolean }) => {
+    list: (params: { generation_id?: number; region_id?: number; eligibility?: EligibilityFilter }) => {
       const qs = new URLSearchParams();
       if (params.generation_id) qs.set('generation_id', String(params.generation_id));
       if (params.region_id) qs.set('region_id', String(params.region_id));
-      if (params.eligible_only === false) qs.set('eligible_only', 'false');
+      if (params.eligibility) qs.set('eligibility', params.eligibility);
       const q = qs.toString();
       return get<FormEntry[]>(`/forms${q ? '?' + q : ''}`);
     },

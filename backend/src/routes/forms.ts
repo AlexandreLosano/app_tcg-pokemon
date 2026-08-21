@@ -44,7 +44,7 @@ const SELECT_FORM_SQL = `
 `;
 
 router.get('/', async (req: Request, res: Response) => {
-  const { generation_id, region_id, eligible_only } = req.query;
+  const { generation_id, region_id, eligibility } = req.query;
   const conditions: string[] = [];
   const params: unknown[] = [];
 
@@ -56,7 +56,9 @@ router.get('/', async (req: Request, res: Response) => {
     params.push(Number(region_id));
     conditions.push(`f.region_id = $${params.length}`);
   }
-  if (eligible_only !== 'false') {
+  if (eligibility === 'hidden') {
+    conditions.push('f.living_dex_eligible = false');
+  } else if (eligibility !== 'all') {
     conditions.push('f.living_dex_eligible = true');
   }
 

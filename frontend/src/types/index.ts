@@ -1,3 +1,5 @@
+export type EligibilityFilter = 'eligible' | 'all' | 'hidden';
+
 export interface Generation {
   id: number;
   name: string;

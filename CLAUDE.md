@@ -3,7 +3,7 @@
 ## Regras Obrigatórias
 
 ### 1. Documentação de Alterações
-Toda alteração de código deve ser documentada em `/docs/alteracao_XXXX.md` (número sequencial com 4 dígitos). Próximo número: **0005**.
+Toda alteração de código deve ser documentada em `/docs/alteracao_XXXX.md` (número sequencial com 4 dígitos). Próximo número: **0006**.
 
 Formato:
 ```
@@ -143,7 +143,7 @@ app_tcg-pokemon/
 | GET | `/health` | healthcheck Docker |
 | GET | `/api/generations`, `/api/regions` | listas de referência |
 | GET | `/api/species`, `/api/species/:id` | espécies |
-| GET | `/api/forms?generation_id=&region_id=&eligible_only=` | endpoint principal do fichário |
+| GET | `/api/forms?generation_id=&region_id=&eligibility=eligible\|all\|hidden` | endpoint principal do fichário |
 | PATCH | `/api/forms/:id/eligibility` | `{ living_dex_eligible }` |
 | PUT | `/api/collection/:formId` | `{ owned?, is_definitive?, needs_trade?, notes? }` |
 | POST | `/api/collection/:formId/attach-card` | anexa carta escolhida |

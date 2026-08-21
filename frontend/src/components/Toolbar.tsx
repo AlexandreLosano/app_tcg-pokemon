@@ -1,14 +1,14 @@
-import type { Generation, Region, SyncSummary } from '../types';
+import type { EligibilityFilter, Generation, Region, SyncSummary } from '../types';
 
 interface Props {
   generations: Generation[];
   regions: Region[];
   generationId: number | undefined;
   regionId: number | undefined;
-  eligibleOnly: boolean;
+  eligibility: EligibilityFilter;
   onGenerationChange: (id: number | undefined) => void;
   onRegionChange: (id: number | undefined) => void;
-  onEligibleOnlyChange: (value: boolean) => void;
+  onEligibilityChange: (value: EligibilityFilter) => void;
   onSync: () => void;
   syncing: boolean;
   syncResult: SyncSummary | null;
@@ -20,10 +20,10 @@ export default function Toolbar({
   regions,
   generationId,
   regionId,
-  eligibleOnly,
+  eligibility,
   onGenerationChange,
   onRegionChange,
-  onEligibleOnlyChange,
+  onEligibilityChange,
   onSync,
   syncing,
   syncResult,
@@ -64,12 +64,12 @@ export default function Toolbar({
       </label>
 
       <label>
-        <input
-          type="checkbox"
-          checked={eligibleOnly}
-          onChange={e => onEligibleOnlyChange(e.target.checked)}
-        />
-        Somente elegíveis
+        Elegibilidade
+        <select value={eligibility} onChange={e => onEligibilityChange(e.target.value as EligibilityFilter)}>
+          <option value="eligible">Elegíveis</option>
+          <option value="all">Todas</option>
+          <option value="hidden">Ocultas</option>
+        </select>
       </label>
 
       <div className="spacer" />

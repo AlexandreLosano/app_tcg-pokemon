@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { Generation, Region, FormEntry, SyncSummary } from '../types';
+import type { EligibilityFilter, Generation, Region, FormEntry, SyncSummary } from '../types';
 import Toolbar from './Toolbar';
 import BinderGrid from './BinderGrid';
 import FormDetailPanel from './FormDetailPanel';
+
+function matchesEligibilityFilter(form: FormEntry, eligibility: EligibilityFilter): boolean {
+  if (eligibility === 'eligible') return form.living_dex_eligible;
+  if (eligibility === 'hidden') return !form.living_dex_eligible;
+  return true;
+}
 
 export default function BinderPage() {
   const [generations, setGenerations] = useState<Generation[]>([]);
@@ -13,7 +19,7 @@ export default function BinderPage() {
 
   const [generationId, setGenerationId] = useState<number | undefined>(undefined);
   const [regionId, setRegionId] = useState<number | undefined>(undefined);
-  const [eligibleOnly, setEligibleOnly] = useState(true);
+  const [eligibility, setEligibility] = useState<EligibilityFilter>('eligible');
 
   const [selectedFormId, setSelectedFormId] = useState<number | null>(null);
 
@@ -30,12 +36,12 @@ export default function BinderPage() {
   const loadForms = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.forms.list({ generation_id: generationId, region_id: regionId, eligible_only: eligibleOnly });
+      const data = await api.forms.list({ generation_id: generationId, region_id: regionId, eligibility });
       setForms(data);
     } finally {
       setLoading(false);
     }
-  }, [generationId, regionId, eligibleOnly]);
+  }, [generationId, regionId, eligibility]);
 
   useEffect(() => {
     loadReference();
@@ -64,7 +70,10 @@ export default function BinderPage() {
   const selectedForm = forms.find(f => f.id === selectedFormId) ?? null;
 
   const handleFormUpdated = (updated: FormEntry) => {
-    setForms(prev => prev.map(f => (f.id === updated.id ? updated : f)));
+    setForms(prev => {
+      const next = prev.map(f => (f.id === updated.id ? updated : f));
+      return next.filter(f => f.id !== updated.id || matchesEligibilityFilter(f, eligibility));
+    });
   };
 
   const handleToggleEligibility = async (formId: number, eligible: boolean) => {
@@ -79,8 +88,8 @@ export default function BinderPage() {
             }
           : f
       );
-      // Se estamos filtrando só elegíveis e a forma acabou de ser ocultada, some da lista na hora.
-      return eligibleOnly && !result.living_dex_eligible ? updated.filter(f => f.id !== formId) : updated;
+      // Some da lista na hora se a forma deixou de bater com o filtro de elegibilidade atual.
+      return updated.filter(f => f.id !== formId || matchesEligibilityFilter(f, eligibility));
     });
   };
 
@@ -91,10 +100,10 @@ export default function BinderPage() {
         regions={regions}
         generationId={generationId}
         regionId={regionId}
-        eligibleOnly={eligibleOnly}
+        eligibility={eligibility}
         onGenerationChange={setGenerationId}
         onRegionChange={setRegionId}
-        onEligibleOnlyChange={setEligibleOnly}
+        onEligibilityChange={setEligibility}
         onSync={handleSync}
         syncing={syncing}
         syncResult={syncResult}
