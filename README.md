@@ -14,12 +14,15 @@ Fichário digital para acompanhar uma coleção física de cartas Pokémon TCG o
 
 ## Funcionalidades
 
-- **Filtros por Geração e Região** — no nível da *forma*, não da espécie. Filtrar por Geração I mostra só o Meowth original; filtrar por Geração III/Hoenn mostra as 4 formas de Castform juntas.
-- **Botão "Atualizar"** — resincroniza espécies/formas/gerações/regiões contra a PokéAPI (idempotente, roda em poucos segundos).
+- **Filtros por Geração e Região** — no nível da *forma*, não da espécie. Filtrar por Geração I mostra só o Meowth original; filtrar por Geração III/Hoenn mostra as 4 formas de Castform juntas. Também dá pra filtrar por status de posse (Tenho/Definitiva/Precisa de troca/Não tenho) e por fichário físico.
+- **Botão "Atualizar"** — resincroniza espécies/formas/gerações/regiões contra a PokéAPI (idempotente, roda em poucos segundos). Nomes e status editados manualmente nunca são sobrescritos pelo sync.
 - **Status por forma** — 4 categorias: Visível (padrão), Oculta (não conta como slot), Sem necessidade (existe carta, mas não é prioridade agora — ex: formas Mega) e Sem carta ainda (quero ter, mas ainda não foi impressa). Ajustável rápido na grade/lista/fichário (✕/↺) ou com detalhe no painel da forma; cada categoria tem seu próprio filtro na toolbar.
-- **Coleção por forma** — tenho a carta / carta definitiva (não pretendo trocar) / precisa de troca / notas livres.
-- **Anexar carta física** — busca na Pokémon TCG API por nome e/ou número impresso na carta (útil quando a busca por nome não traz o print exato) e anexa a carta escolhida (arte, set, número, raridade) a cada forma.
-- **Três visões** — **Grade** (padrão, todas as formas filtradas), **Lista** (tabela compacta) e **Fichário** (9 cards por página em 3x3, com setas de navegação, simulando um álbum físico de 9 bolsos).
+- **Coleção por forma** — tenho a carta / carta definitiva (não pretendo trocar) / precisa de troca / notas livres. O nome de exibição de qualquer forma também é editável direto no painel.
+- **Anexar carta física** — busca na Pokémon TCG API por nome e/ou número impresso na carta (útil quando a busca por nome não traz o print exato) e anexa a carta escolhida (arte, set, número, raridade) a cada forma. Quando a API não tem o print (comum em sets regionais/promocionais), dá pra cadastrar a carta manualmente (nome, número, set, raridade, URL da imagem).
+- **Fichários físicos** — cadastro dos fichários reais onde as cartas ficam guardadas, com atribuição por forma (individual ou em lote pela Lista) e posição manual opcional (página + slot 1-9 numa grade 3x3) para fichários cuja organização física não segue a ordem da dex.
+- **Formas manuais** — cadastro de variantes que a PokéAPI não modela como forma própria (ex: diferença visual grande entre macho e fêmea), baseadas numa forma existente para herdar geração/região/posição na ordenação automaticamente.
+- **Três visões** — **Grade** (padrão, todas as formas filtradas), **Lista** (tabela compacta, com seleção em lote) e **Fichário** (9 cards por página em 3x3, com setas de navegação, simulando um álbum físico de 9 bolsos — respeita a posição manual quando definida).
+- **Gráficos** — página com donuts de % de posse, agrupável por Geração, Região ou Fichário.
 
 ## Modelo de dados
 
@@ -73,3 +76,4 @@ app_tcg-pokemon/
 ## Histórico de Alterações
 
 Ver `docs/alteracao_XXXX.md` para o histórico detalhado de cada mudança no projeto.
+# app_pokemon
