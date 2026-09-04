@@ -1,6 +1,8 @@
 export type FormStatus = 'visible' | 'hidden' | 'no_need' | 'card_unavailable';
 export type StatusFilter = FormStatus | 'all';
 export type ViewMode = 'grid' | 'list' | 'album';
+export type BinderFilter = number | 'none';
+export type CollectionStatusFilter = 'missing' | 'owned' | 'definitive' | 'trade';
 
 export interface Generation {
   id: number;
@@ -14,10 +16,18 @@ export interface Region {
   display_name: string;
 }
 
+export interface Binder {
+  id: number;
+  name: string;
+  sort_order: number;
+}
+
 export interface FormEntry {
   id: number;
+  pokeapi_form_id: number;
   form_slug: string;
   display_name: string;
+  display_name_overridden: boolean;
   form_name: string;
   sprite_url: string | null;
   is_battle_only: boolean;
@@ -45,6 +55,10 @@ export interface FormEntry {
   tcg_card_rarity: string | null;
   tcg_card_image_small_url: string | null;
   tcg_card_image_large_url: string | null;
+  binder_id: number | null;
+  binder_name: string | null;
+  binder_page: number | null;
+  binder_slot: number | null;
 }
 
 export interface TcgCardSearchResult {
@@ -79,5 +93,8 @@ export interface CollectionEntryUpdate {
   needs_trade: boolean;
   notes: string | null;
   tcg_card_id: string | null;
+  binder_id: number | null;
+  binder_page: number | null;
+  binder_slot: number | null;
   updated_at: string;
 }

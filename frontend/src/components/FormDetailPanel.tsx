@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { FormEntry, FormStatus, TcgCardSearchResult } from '../types';
+import type { Binder, FormEntry, FormStatus, TcgCardSearchResult } from '../types';
 
 interface Props {
   form: FormEntry;
+  binders: Binder[];
   onClose: () => void;
   onUpdated: (form: FormEntry) => void;
 }
@@ -34,8 +35,17 @@ function raritySymbol(rarity: string): string {
   return '✦'; // holo, ex, gx, v, vmax, secret, ultra, rainbow, amazing, shiny, prime, ace, legend...
 }
 
-export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
+// crypto.randomUUID() exige contexto seguro (HTTPS ou localhost) — acessando o app por IP na
+// rede local, por exemplo, ele não existe. Gera um id só com Math.random/Date.now, sem depender da Crypto API.
+function generateManualCardId(): string {
+  return `manual-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export default function FormDetailPanel({ form, binders, onClose, onUpdated }: Props) {
   const [notes, setNotes] = useState(form.notes ?? '');
+  const [nameDraft, setNameDraft] = useState(form.display_name);
+  const [statusDraft, setStatusDraft] = useState<FormStatus>(form.status);
+  const [savingStatus, setSavingStatus] = useState(false);
   const [tcgConfigured, setTcgConfigured] = useState<boolean | null>(null);
   const [query, setQuery] = useState(form.display_name);
   const [numberQuery, setNumberQuery] = useState('');
@@ -45,6 +55,17 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
+  const [manualName, setManualName] = useState('');
+  const [manualSet, setManualSet] = useState('');
+  const [manualNumber, setManualNumber] = useState('');
+  const [manualRarity, setManualRarity] = useState('');
+  const [manualImageUrl, setManualImageUrl] = useState('');
+  const [manualError, setManualError] = useState<string | null>(null);
+  const [attachingManual, setAttachingManual] = useState(false);
+  const [pageDraft, setPageDraft] = useState(form.binder_page != null ? String(form.binder_page) : '');
+  const [slotDraft, setSlotDraft] = useState(form.binder_slot != null ? String(form.binder_slot) : '');
+  const [positionError, setPositionError] = useState<string | null>(null);
 
   useEffect(() => {
     setNotes(form.notes ?? '');
@@ -53,7 +74,28 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
     setRarityFilter('');
     setResults([]);
     setHasSearched(false);
+    setManualMode(false);
+    setManualName('');
+    setManualSet('');
+    setManualNumber('');
+    setManualRarity('');
+    setManualImageUrl('');
+    setManualError(null);
   }, [form.id]);
+
+  useEffect(() => {
+    setNameDraft(form.display_name);
+  }, [form.id, form.display_name]);
+
+  useEffect(() => {
+    setStatusDraft(form.status);
+  }, [form.id, form.status]);
+
+  useEffect(() => {
+    setPageDraft(form.binder_page != null ? String(form.binder_page) : '');
+    setSlotDraft(form.binder_slot != null ? String(form.binder_slot) : '');
+    setPositionError(null);
+  }, [form.id, form.binder_id, form.binder_page, form.binder_slot]);
 
   useEffect(() => {
     api.tcgCards.status().then(s => {
@@ -62,15 +104,59 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
     });
   }, []);
 
-  const updateCollection = async (patch: Partial<{ owned: boolean; is_definitive: boolean; needs_trade: boolean }>) => {
+  const updateCollection = async (
+    patch: Partial<{
+      owned: boolean;
+      is_definitive: boolean;
+      needs_trade: boolean;
+      binder_id: number | null;
+      binder_page: number | null;
+      binder_slot: number | null;
+    }>
+  ) => {
     const updated = await api.collection.update(form.id, patch);
+    const binderName = updated.binder_id != null ? binders.find(b => b.id === updated.binder_id)?.name ?? null : null;
     onUpdated({
       ...form,
       owned: updated.owned,
       is_definitive: updated.is_definitive,
       needs_trade: updated.needs_trade,
       notes: updated.notes,
+      binder_id: updated.binder_id,
+      binder_name: binderName,
+      binder_page: updated.binder_page,
+      binder_slot: updated.binder_slot,
     });
+  };
+
+  const handlePositionBlur = async () => {
+    const page = pageDraft.trim() ? Number(pageDraft) : null;
+    const slot = slotDraft.trim() ? Number(slotDraft) : null;
+    if (page === form.binder_page && slot === form.binder_slot) return;
+    if (slot !== null && (slot < 1 || slot > 9)) {
+      setPositionError('Posição deve ser entre 1 e 9.');
+      setSlotDraft(form.binder_slot != null ? String(form.binder_slot) : '');
+      return;
+    }
+    setPositionError(null);
+    try {
+      await updateCollection({ binder_page: page, binder_slot: slot });
+    } catch (err) {
+      setPositionError(err instanceof Error ? err.message : String(err));
+      setPageDraft(form.binder_page != null ? String(form.binder_page) : '');
+      setSlotDraft(form.binder_slot != null ? String(form.binder_slot) : '');
+    }
+  };
+
+  const handleNameBlur = async () => {
+    const trimmed = nameDraft.trim();
+    if (!trimmed) {
+      setNameDraft(form.display_name);
+      return;
+    }
+    if (trimmed === form.display_name) return;
+    const result = await api.forms.setDisplayName(form.id, trimmed);
+    onUpdated({ ...form, display_name: result.display_name, display_name_overridden: result.display_name_overridden });
   };
 
   const handleNotesBlur = async () => {
@@ -79,9 +165,19 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
     onUpdated({ ...form, notes: updated.notes });
   };
 
-  const handleStatusChange = async (status: FormStatus) => {
-    const result = await api.forms.setStatus(form.id, status);
-    onUpdated({ ...form, status: result.status, status_overridden: result.status_overridden });
+  const handleSaveStatus = async () => {
+    if (statusDraft === form.status) {
+      onClose();
+      return;
+    }
+    setSavingStatus(true);
+    try {
+      const result = await api.forms.setStatus(form.id, statusDraft);
+      onUpdated({ ...form, status: result.status, status_overridden: result.status_overridden });
+      onClose();
+    } finally {
+      setSavingStatus(false);
+    }
   };
 
   const handleSearch = async () => {
@@ -100,6 +196,42 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
       setSearchError(err instanceof Error ? err.message : String(err));
     } finally {
       setSearching(false);
+    }
+  };
+
+  const openManualMode = () => {
+    setManualName(query.trim() || form.display_name);
+    setManualNumber(numberQuery.trim());
+    setManualRarity(rarityFilter);
+    setManualImageUrl('');
+    setManualError(null);
+    setManualMode(true);
+  };
+
+  const handleAttachManual = async () => {
+    const name = manualName.trim();
+    const imageUrl = manualImageUrl.trim();
+    if (!name || !imageUrl) {
+      setManualError('Nome e URL da imagem são obrigatórios.');
+      return;
+    }
+    setAttachingManual(true);
+    setManualError(null);
+    try {
+      const card: TcgCardSearchResult = {
+        id: generateManualCardId(),
+        name,
+        number: manualNumber.trim() || undefined,
+        rarity: manualRarity.trim() || undefined,
+        set: manualSet.trim() ? { id: 'manual', name: manualSet.trim(), series: '', releaseDate: '' } : undefined,
+        images: { small: imageUrl, large: imageUrl },
+      };
+      await handleAttach(card);
+      setManualMode(false);
+    } catch (err) {
+      setManualError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setAttachingManual(false);
     }
   };
 
@@ -145,13 +277,65 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
         <button className="modal-close" onClick={onClose} aria-label="Fechar">
           ×
         </button>
-        <h2>{form.display_name}</h2>
+        <div className="form-title-row">
+          <input
+            className="form-title-input"
+            value={nameDraft}
+            onChange={e => setNameDraft(e.target.value)}
+            onBlur={handleNameBlur}
+            onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+          />
+          {form.display_name_overridden && <span className="badge">nome editado</span>}
+        </div>
         <div className="subtitle">
           {form.generation_display_name ?? 'Sem geração'} · {form.region_display_name ?? 'Sem região'}
         </div>
 
         <div className="modal-section">
           <h3>Coleção</h3>
+          <label className="binder-field-label">
+            Fichário onde está guardada
+            <select
+              className="status-select"
+              value={form.binder_id ?? ''}
+              onChange={e => updateCollection({ binder_id: e.target.value ? Number(e.target.value) : null })}
+            >
+              <option value="">Nenhum</option>
+              {binders.map(b => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {form.binder_id !== null && (
+            <div className="binder-position-row">
+              <label>
+                Página
+                <input
+                  type="number"
+                  min={1}
+                  className="binder-position-input"
+                  value={pageDraft}
+                  onChange={e => setPageDraft(e.target.value)}
+                  onBlur={handlePositionBlur}
+                />
+              </label>
+              <label>
+                Posição (1-9)
+                <input
+                  type="number"
+                  min={1}
+                  max={9}
+                  className="binder-position-input"
+                  value={slotDraft}
+                  onChange={e => setSlotDraft(e.target.value)}
+                  onBlur={handlePositionBlur}
+                />
+              </label>
+            </div>
+          )}
+          {positionError && <div className="sync-summary error">{positionError}</div>}
           <div className="toggle-row">
             <input
               type="checkbox"
@@ -196,21 +380,19 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
             Status na Living Dex
             {form.status_overridden && <span className="badge">ajustado manualmente</span>}
           </h3>
-          <div className="status-options">
+          <select
+            className="status-select"
+            value={statusDraft}
+            onChange={e => setStatusDraft(e.target.value as FormStatus)}
+          >
             {STATUS_OPTIONS.map(opt => (
-              <label key={opt.value} className="status-option">
-                <input
-                  type="radio"
-                  name="form-status"
-                  checked={form.status === opt.value}
-                  onChange={() => handleStatusChange(opt.value)}
-                />
-                <div>
-                  <div className="status-option-label">{opt.label}</div>
-                  <div className="status-option-desc">{opt.description}</div>
-                </div>
-              </label>
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
+          </select>
+          <div className="status-select-desc">
+            {STATUS_OPTIONS.find(opt => opt.value === statusDraft)?.description}
           </div>
         </div>
 
@@ -223,6 +405,7 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
                 <strong>{form.tcg_card_name}</strong>
                 {form.tcg_card_set_name} · #{form.tcg_card_number}
                 {form.tcg_card_rarity ? ` · ${raritySymbol(form.tcg_card_rarity)} ${form.tcg_card_rarity}` : ''}
+                {form.tcg_card_id.startsWith('manual-') && <span className="badge">cadastrada manualmente</span>}
               </div>
               <button className="btn-small danger" onClick={handleDetach}>
                 Remover
@@ -236,6 +419,7 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
             <>
               <div className="search-box">
                 <input
+                  className="search-name-input"
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
@@ -246,31 +430,30 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
                   value={numberQuery}
                   onChange={e => setNumberQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  placeholder="Número (ex: 58)"
+                  placeholder="Número"
                 />
+                {rarities.length > 0 && (
+                  <select
+                    className="search-rarity-select"
+                    value={rarityFilter}
+                    onChange={e => setRarityFilter(e.target.value)}
+                  >
+                    <option value="">Raridade</option>
+                    {rarities.map(r => (
+                      <option key={r} value={r}>
+                        {raritySymbol(r)} {r}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <button
-                  className="btn-small"
+                  className="search-button"
                   onClick={handleSearch}
                   disabled={searching || (!query.trim() && !numberQuery.trim() && !rarityFilter)}
                 >
                   {searching ? 'Buscando…' : 'Buscar'}
                 </button>
               </div>
-              {rarities.length > 0 && (
-                <div className="search-filter-row">
-                  <label>
-                    Raridade
-                    <select value={rarityFilter} onChange={e => setRarityFilter(e.target.value)}>
-                      <option value="">Todas</option>
-                      {rarities.map(r => (
-                        <option key={r} value={r}>
-                          {raritySymbol(r)} {r}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-              )}
               <div className="search-hint">
                 Não achou a carta que você tem? Apague o nome e busque só pelo número impresso na carta, filtre
                 por raridade, ou combine os três para achar o print exato.
@@ -290,8 +473,89 @@ export default function FormDetailPanel({ form, onClose, onUpdated }: Props) {
                   </div>
                 ))}
               </div>
+
+              {!manualMode ? (
+                <button className="btn-small" onClick={openManualMode}>
+                  Carta não está na API — cadastrar manualmente
+                </button>
+              ) : (
+                <div className="manual-card-form">
+                  <div className="search-hint">
+                    A busca usa a Pokémon TCG API, que às vezes não tem certos prints (ex: sets regionais). Preencha
+                    à mão — a URL da imagem pode vir de qualquer site que mostre a carta (ex: Liga Pokémon).
+                  </div>
+                  <div className="search-box">
+                    <input
+                      className="search-name-input"
+                      value={manualName}
+                      onChange={e => setManualName(e.target.value)}
+                      placeholder="Nome da carta…"
+                    />
+                    <input
+                      className="search-number-input"
+                      value={manualNumber}
+                      onChange={e => setManualNumber(e.target.value)}
+                      placeholder="Número"
+                    />
+                  </div>
+                  <div className="search-box">
+                    <input
+                      className="search-name-input"
+                      value={manualSet}
+                      onChange={e => setManualSet(e.target.value)}
+                      placeholder="Coleção/set (ex: XY8)…"
+                    />
+                    {rarities.length > 0 ? (
+                      <select
+                        className="search-rarity-select"
+                        value={manualRarity}
+                        onChange={e => setManualRarity(e.target.value)}
+                      >
+                        <option value="">Raridade</option>
+                        {rarities.map(r => (
+                          <option key={r} value={r}>
+                            {raritySymbol(r)} {r}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        className="search-number-input"
+                        value={manualRarity}
+                        onChange={e => setManualRarity(e.target.value)}
+                        placeholder="Raridade"
+                      />
+                    )}
+                  </div>
+                  <div className="search-box">
+                    <input
+                      className="search-name-input"
+                      value={manualImageUrl}
+                      onChange={e => setManualImageUrl(e.target.value)}
+                      placeholder="URL da imagem…"
+                    />
+                    <button
+                      className="search-button"
+                      onClick={handleAttachManual}
+                      disabled={attachingManual || !manualName.trim() || !manualImageUrl.trim()}
+                    >
+                      {attachingManual ? 'Anexando…' : 'Anexar'}
+                    </button>
+                  </div>
+                  {manualError && <div className="sync-summary error">{manualError}</div>}
+                  <button className="btn-small" onClick={() => setManualMode(false)}>
+                    Cancelar
+                  </button>
+                </div>
+              )}
             </>
           )}
+        </div>
+
+        <div className="modal-footer">
+          <button className="sync-button" onClick={handleSaveStatus} disabled={savingStatus}>
+            {savingStatus ? 'Salvando…' : 'Salvar e fechar'}
+          </button>
         </div>
       </div>
     </div>

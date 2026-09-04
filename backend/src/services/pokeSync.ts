@@ -405,7 +405,7 @@ async function upsertForms(formRows: FormRow[]): Promise<void> {
          pokeapi_pokemon_id = EXCLUDED.pokeapi_pokemon_id,
          species_id = EXCLUDED.species_id,
          form_slug = EXCLUDED.form_slug,
-         display_name = EXCLUDED.display_name,
+         display_name = CASE WHEN forms.display_name_overridden THEN forms.display_name ELSE EXCLUDED.display_name END,
          form_name = EXCLUDED.form_name,
          is_default_variety = EXCLUDED.is_default_variety,
          is_battle_only = EXCLUDED.is_battle_only,

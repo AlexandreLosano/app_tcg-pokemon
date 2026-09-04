@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import type { FormEntry, FormStatus } from '../types';
+import type { Binder, FormEntry, FormStatus } from '../types';
 import { statusClass, statusLabel, imageUrl, formStatusLabel } from '../utils/formDisplay';
 
 interface Props {
   forms: FormEntry[];
+  binders: Binder[];
   loading: boolean;
   onSelect: (formId: number) => void;
   onToggleHidden: (formId: number, hide: boolean) => void;
   onBulkSetStatus: (formIds: number[], status: FormStatus) => Promise<void>;
+  onBulkSetBinder: (formIds: number[], binderId: number | null) => Promise<void>;
 }
 
 const BULK_STATUS_OPTIONS: { value: FormStatus; label: string }[] = [
@@ -17,9 +19,18 @@ const BULK_STATUS_OPTIONS: { value: FormStatus; label: string }[] = [
   { value: 'hidden', label: 'Oculta' },
 ];
 
-export default function ListView({ forms, loading, onSelect, onToggleHidden, onBulkSetStatus }: Props) {
+export default function ListView({
+  forms,
+  binders,
+  loading,
+  onSelect,
+  onToggleHidden,
+  onBulkSetStatus,
+  onBulkSetBinder,
+}: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [applying, setApplying] = useState(false);
+  const [bulkBinderId, setBulkBinderId] = useState('');
 
   // Um novo carregamento (troca de filtro) invalida a seleção; edições pontuais no painel
   // de detalhe (que não passam por "loading") não devem mexer na seleção do usuário.
@@ -65,28 +76,55 @@ export default function ListView({ forms, loading, onSelect, onToggleHidden, onB
     }
   };
 
+  const applyBulkBinder = async () => {
+    setApplying(true);
+    try {
+      await onBulkSetBinder([...selectedIds], bulkBinderId ? Number(bulkBinderId) : null);
+      setSelectedIds(new Set());
+      setBulkBinderId('');
+    } finally {
+      setApplying(false);
+    }
+  };
+
   return (
     <div className="list-view">
       {selectedIds.size > 0 && (
         <div className="bulk-bar">
-          <span>{selectedIds.size} selecionada(s)</span>
-          <span className="bulk-bar-label">Marcar como:</span>
-          <div className="bulk-actions">
-            {BULK_STATUS_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                className="btn-small"
-                disabled={applying}
-                onClick={() => applyBulkStatus(opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="bulk-bar-row">
+            <span>{selectedIds.size} selecionada(s)</span>
+            <span className="bulk-bar-label">Marcar como:</span>
+            <div className="bulk-actions">
+              {BULK_STATUS_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  className="btn-small"
+                  disabled={applying}
+                  onClick={() => applyBulkStatus(opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <div className="spacer" />
+            <button className="btn-small" disabled={applying} onClick={() => setSelectedIds(new Set())}>
+              Limpar seleção
+            </button>
           </div>
-          <div className="spacer" />
-          <button className="btn-small" disabled={applying} onClick={() => setSelectedIds(new Set())}>
-            Limpar seleção
-          </button>
+          <div className="bulk-bar-row">
+            <span className="bulk-bar-label">Fichário:</span>
+            <select value={bulkBinderId} onChange={e => setBulkBinderId(e.target.value)} disabled={applying}>
+              <option value="">Nenhum</option>
+              {binders.map(b => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+            <button className="btn-small" disabled={applying} onClick={applyBulkBinder}>
+              Aplicar
+            </button>
+          </div>
         </div>
       )}
       <table className="forms-table">
@@ -102,6 +140,7 @@ export default function ListView({ forms, loading, onSelect, onToggleHidden, onB
             <th>Status</th>
             <th>Categoria</th>
             <th>Carta anexada</th>
+            <th>Fichário</th>
             <th></th>
           </tr>
         </thead>
@@ -135,6 +174,7 @@ export default function ListView({ forms, loading, onSelect, onToggleHidden, onB
                     ? `${form.tcg_card_name} — ${form.tcg_card_set_name ?? '?'} #${form.tcg_card_number ?? '?'}`
                     : '—'}
                 </td>
+                <td>{form.binder_name ?? '—'}</td>
                 <td>
                   <button
                     className="hide-btn static"

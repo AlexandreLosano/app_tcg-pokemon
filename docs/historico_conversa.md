@@ -91,10 +91,33 @@ Dado de teste (a carta anexada ao Alolan Meowth só para validar o fluxo) foi re
 
 ---
 
-## 7. Estado atual
+## 7. Estado atual (fim da sessão inicial)
 
 - Projeto rodando em `docker compose -p app_tcg_pokemon_dev up --build -d`, acessível em `http://localhost:25173`.
 - Banco populado com a Pokédex completa (via sync) — coleção do usuário ainda zerada, pronta para ser preenchida.
 - Busca/anexo de carta ativo (chave da Pokémon TCG API configurada).
 - **Passo manual pendente, esperado**: abrir as 3 formas de clima do Castform (Sunny/Rainy/Snowy) e ativar "Contar esta forma como slot separado" — elas vêm desativadas por padrão pela classificação da PokéAPI.
 - Histórico de mudanças de código em `docs/alteracao_0001.md` e `docs/alteracao_0002.md`; próxima mudança deve ser `docs/alteracao_0003.md`.
+
+---
+
+## 8. Da ferramenta de registro ao acervo físico completo
+
+Com o app funcionando e a coleção real sendo preenchida ao longo de várias sessões seguintes, uma segunda onda de pedidos girou em torno de um problema novo: a Living Dex digital precisava espelhar decisões de organização **física** que não têm relação nenhuma com geração/região/número da dex.
+
+- **Página de Gráficos**: primeiro pedido dessa fase — visualizar % de posse em donuts, filtrável por geração/região, com uma grade comparativa (um donut por geração ou por região, dependendo de qual filtro está livre). Implementado em `ChartsPage.tsx`/`DonutChart.tsx` sem dependência nova (SVG puro).
+- **Fichários físicos (`binders`)**: pedido central da fase — "eu literalmente monto nos fichários as cartas, mas as formas alternativas Castform por exemplo, deixo 1 no fichário da geração, e os demais em outros fichários". Virou uma tabela `binders` própria + `collection_entries.binder_id`, com CRUD completo (`BinderManagerModal.tsx`), atribuição individual (painel de detalhe) e em lote (seleção múltipla na Lista, reaproveitando o mecanismo que já existia para status).
+- **Posição manual dentro do fichário**: o fichário "Alternativas Originais" reúne espécies sem relação de ordem — o usuário queria fixar página + posição (grade 3x3) exatamente como está fisicamente organizado. Adicionado `binder_page`/`binder_slot`, com índice único no banco (duas cartas não podem ocupar o mesmo slot) e a visão "Fichário" passou a respeitar essa posição quando definida, sem quebrar o comportamento padrão nos demais fichários.
+- **Formas manuais**: para Pokémon com "diferenças grandes entre os Machos e Femeas" que a PokéAPI não modela como forma própria (só como sprite alternativo) — cadastro manual explícito, herdando geração/região da forma base escolhida (garante a posição certa na ordenação sem lógica extra). Depois de um feedback direto do usuário ("não é prático... crie um botão isolado"), o cadastro foi tirado do modal de cada carta e virou um botão isolado no Toolbar com busca própria.
+- **Cadastro manual de carta**: motivado por um caso concreto — Noibat (23/30) existente na Liga Pokémon mas não indexado pela Pokémon TCG API. Como o endpoint de anexar carta já aceitava qualquer objeto (não só resultado de busca), bastou expor um formulário manual na UI. Dois bugs reais apareceram e foram corrigidos durante o uso real: o id gerado estourava o limite da coluna no banco, e depois `crypto.randomUUID()` não existe fora de contexto seguro (HTTPS/localhost) — trocado por um gerador sem dependência da Crypto API.
+- **Nome editável por forma**: "deixe eu editar os nome de todos, para deixar mais com a minha cara" — qualquer `display_name` virou editável direto no painel, protegido contra sobrescrita no próximo sync (mesmo padrão de `status_overridden`, agora também para o nome).
+- **Filtro por status de posse**: Tenho/Definitiva/Precisa de troca/Não tenho, além do filtro de status da forma que já existia.
+- **Curadoria em massa dos fichários especiais**: com a base pronta, o usuário pediu uma série de verificações e movimentações em lote — todas as formas Mega e Gigantamax revisadas (status "Sem necessidade" + fichário próprio, incluindo achar e corrigir duas Megas que faltavam no fichário), e novos fichários "99. Fichário Formas Desnecessárias", "99. Fichário Totem" e "99. Fichário Repetições" criados para reunir variantes cosméticas (roupas do Pikachu, tipos de Arceus/Silvally, tumbas do Furfrou, padrões de Vivillon/Flabébé/Floette/Florges, tamanhos de Pumpkaboo/Gourgeist, doces do Alcremie, formas Totem, repetições de padrão do Scatterbug/Spewpa) — sempre confirmando com o usuário antes de qualquer mudança em massa nos dados reais.
+
+---
+
+## 9. Estado atual
+
+- 25 alterações documentadas em `docs/alteracao_0001.md`–`docs/alteracao_0025.md`; próxima mudança deve ser `docs/alteracao_0026.md`.
+- Coleção real do usuário em uso ativo, com dezenas de fichários físicos cadastrados (numerados "01." a "16." por geração/categoria, mais os especiais "99." para Mega/Gigantamax/formas cosméticas/repetições).
+- Duas páginas no app: **Fichário** (Grade/Lista/Fichário, com todos os filtros — geração, região, fichário, status da forma, status de posse) e **Gráficos** (donuts agrupáveis por geração, região ou fichário).

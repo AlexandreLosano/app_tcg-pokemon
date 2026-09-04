@@ -1,16 +1,55 @@
 import { useState } from 'react';
-import type { FormEntry } from '../types';
+import type { BinderFilter, FormEntry } from '../types';
 import { statusClass, statusLabel, imageUrl, formStatusLabel } from '../utils/formDisplay';
 
 interface Props {
   forms: FormEntry[];
+  binderId: BinderFilter | undefined;
   onSelect: (formId: number) => void;
   onToggleHidden: (formId: number, hide: boolean) => void;
 }
 
 const PAGE_SIZE = 9;
 
-export default function AlbumView({ forms, onSelect, onToggleHidden }: Props) {
+function chunkIntoPages(forms: FormEntry[]): (FormEntry | null)[][] {
+  const pages: (FormEntry | null)[][] = [];
+  for (let i = 0; i < forms.length; i += PAGE_SIZE) {
+    const chunk = forms.slice(i, i + PAGE_SIZE);
+    pages.push([...chunk, ...Array(PAGE_SIZE - chunk.length).fill(null)]);
+  }
+  return pages.length ? pages : [Array(PAGE_SIZE).fill(null)];
+}
+
+// Só entra em jogo quando a visão está filtrada por um único fichário específico e pelo menos
+// uma forma dele tem página/posição definida manualmente (ver painel de detalhe, campo
+// "Fichário onde está guardada" -> Página/Posição). Formas desse fichário sem posição definida
+// não somem: entram em páginas extras logo depois das páginas numeradas manualmente, na ordem
+// padrão (paginação sequencial de 9 em 9), então nada fica escondido por falta de posição.
+function buildPages(forms: FormEntry[], binderId: BinderFilter | undefined): (FormEntry | null)[][] {
+  const manualPositioning =
+    typeof binderId === 'number' && forms.some(f => f.binder_page != null && f.binder_slot != null);
+  if (!manualPositioning) return chunkIntoPages(forms);
+
+  const positioned = forms.filter(f => f.binder_page != null && f.binder_slot != null);
+  const unpositioned = forms.filter(f => f.binder_page == null || f.binder_slot == null);
+  const maxPage = positioned.reduce((max, f) => Math.max(max, f.binder_page!), 0);
+
+  const pages: (FormEntry | null)[][] = [];
+  for (let p = 1; p <= maxPage; p++) {
+    const slots: (FormEntry | null)[] = Array(PAGE_SIZE).fill(null);
+    positioned
+      .filter(f => f.binder_page === p)
+      .forEach(f => {
+        const idx = f.binder_slot! - 1;
+        if (idx >= 0 && idx < PAGE_SIZE) slots[idx] = f;
+      });
+    pages.push(slots);
+  }
+  if (unpositioned.length > 0) pages.push(...chunkIntoPages(unpositioned));
+  return pages.length ? pages : [Array(PAGE_SIZE).fill(null)];
+}
+
+export default function AlbumView({ forms, binderId, onSelect, onToggleHidden }: Props) {
   const [page, setPage] = useState(0);
 
   if (forms.length === 0) {
@@ -22,11 +61,10 @@ export default function AlbumView({ forms, onSelect, onToggleHidden }: Props) {
     );
   }
 
-  const totalPages = Math.max(1, Math.ceil(forms.length / PAGE_SIZE));
+  const pages = buildPages(forms, binderId);
+  const totalPages = pages.length;
   const safePage = Math.min(page, totalPages - 1);
-  const start = safePage * PAGE_SIZE;
-  const pageForms = forms.slice(start, start + PAGE_SIZE);
-  const slots: (FormEntry | null)[] = [...pageForms, ...Array(PAGE_SIZE - pageForms.length).fill(null)];
+  const slots = pages[safePage];
 
   return (
     <div className="album-view">

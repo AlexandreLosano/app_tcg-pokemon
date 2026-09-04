@@ -1,12 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { FormStatus, StatusFilter, Generation, Region, FormEntry, SyncSummary, ViewMode } from '../types';
+import type {
+  FormStatus,
+  StatusFilter,
+  Generation,
+  Region,
+  Binder,
+  BinderFilter,
+  CollectionStatusFilter,
+  FormEntry,
+  SyncSummary,
+  ViewMode,
+} from '../types';
 import { hasNoRegistration } from '../utils/formDisplay';
 import Toolbar from './Toolbar';
 import BinderGrid from './BinderGrid';
 import ListView from './ListView';
 import AlbumView from './AlbumView';
 import FormDetailPanel from './FormDetailPanel';
+import BinderManagerModal from './BinderManagerModal';
+import CustomFormManagerModal from './CustomFormManagerModal';
 
 function matchesStatusFilter(form: FormEntry, status: StatusFilter): boolean {
   if (status === 'all') return true;
@@ -16,36 +29,48 @@ function matchesStatusFilter(form: FormEntry, status: StatusFilter): boolean {
 export default function BinderPage() {
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
+  const [binders, setBinders] = useState<Binder[]>([]);
   const [forms, setForms] = useState<FormEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [generationId, setGenerationId] = useState<number | undefined>(undefined);
   const [regionId, setRegionId] = useState<number | undefined>(undefined);
+  const [binderId, setBinderId] = useState<BinderFilter | undefined>(undefined);
   const [status, setStatus] = useState<StatusFilter>('visible');
+  const [collectionStatus, setCollectionStatus] = useState<CollectionStatusFilter | undefined>(undefined);
   const [onlyBlank, setOnlyBlank] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   const [selectedFormId, setSelectedFormId] = useState<number | null>(null);
+  const [managingBinders, setManagingBinders] = useState(false);
+  const [managingCustomForms, setManagingCustomForms] = useState(false);
 
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncSummary | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
 
   const loadReference = useCallback(async () => {
-    const [gens, regs] = await Promise.all([api.generations.list(), api.regions.list()]);
+    const [gens, regs, binds] = await Promise.all([api.generations.list(), api.regions.list(), api.binders.list()]);
     setGenerations(gens);
     setRegions(regs);
+    setBinders(binds);
   }, []);
 
   const loadForms = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.forms.list({ generation_id: generationId, region_id: regionId, status });
+      const data = await api.forms.list({
+        generation_id: generationId,
+        region_id: regionId,
+        binder_id: binderId,
+        status,
+        collection_status: collectionStatus,
+      });
       setForms(data);
     } finally {
       setLoading(false);
     }
-  }, [generationId, regionId, status]);
+  }, [generationId, regionId, binderId, status, collectionStatus]);
 
   useEffect(() => {
     loadReference();
@@ -103,21 +128,62 @@ export default function BinderPage() {
     });
   };
 
+  // Ação em lote da Lista: marca vários ids como guardados no mesmo fichário físico de uma vez
+  // (ex: as 3 formas de clima do Castform que não ficam no fichário "principal" da geração).
+  const handleBulkSetBinder = async (formIds: number[], newBinderId: number | null) => {
+    await Promise.all(formIds.map(id => api.collection.update(id, { binder_id: newBinderId })));
+    const binderName = binders.find(b => b.id === newBinderId)?.name ?? null;
+    setForms(prev => {
+      const idSet = new Set(formIds);
+      const updated = prev.map(f =>
+        idSet.has(f.id)
+          ? { ...f, binder_id: newBinderId, binder_name: binderName, binder_page: null, binder_slot: null }
+          : f
+      );
+      const matchesBinderFilter =
+        binderId === undefined || (binderId === 'none' ? newBinderId === null : newBinderId === binderId);
+      return updated.filter(f => !idSet.has(f.id) || matchesBinderFilter);
+    });
+  };
+
+  // Uma forma manual nova/removida entra em qualquer posição da lista carregada (ordenada
+  // por sp.id, f.id no servidor) -- mais simples recarregar do que tentar inserir localmente.
+  const handleCustomFormsChanged = async () => {
+    await loadForms();
+  };
+
+  const handleBindersChanged = async () => {
+    const binds = await api.binders.list();
+    setBinders(binds);
+    if (typeof binderId === 'number' && !binds.some(b => b.id === binderId)) {
+      setBinderId(undefined);
+    } else {
+      await loadForms();
+    }
+  };
+
   return (
     <div className="app">
       <Toolbar
         generations={generations}
         regions={regions}
+        binders={binders}
         generationId={generationId}
         regionId={regionId}
+        binderId={binderId}
         status={status}
+        collectionStatus={collectionStatus}
         onlyBlank={onlyBlank}
         viewMode={viewMode}
         onGenerationChange={setGenerationId}
         onRegionChange={setRegionId}
+        onBinderChange={setBinderId}
         onStatusChange={setStatus}
+        onCollectionStatusChange={setCollectionStatus}
         onOnlyBlankChange={setOnlyBlank}
         onViewModeChange={setViewMode}
+        onManageBinders={() => setManagingBinders(true)}
+        onManageCustomForms={() => setManagingCustomForms(true)}
         onSync={handleSync}
         syncing={syncing}
         syncResult={syncResult}
@@ -134,16 +200,19 @@ export default function BinderPage() {
       {viewMode === 'list' && (
         <ListView
           forms={visibleForms}
+          binders={binders}
           loading={loading}
           onSelect={id => setSelectedFormId(id)}
           onToggleHidden={handleToggleHidden}
           onBulkSetStatus={handleBulkSetStatus}
+          onBulkSetBinder={handleBulkSetBinder}
         />
       )}
       {viewMode === 'album' && !loading && (
         <AlbumView
-          key={`${generationId}-${regionId}-${status}-${onlyBlank}`}
+          key={`${generationId}-${regionId}-${binderId}-${status}-${collectionStatus}-${onlyBlank}`}
           forms={visibleForms}
+          binderId={binderId}
           onSelect={id => setSelectedFormId(id)}
           onToggleHidden={handleToggleHidden}
         />
@@ -152,8 +221,22 @@ export default function BinderPage() {
       {selectedForm && (
         <FormDetailPanel
           form={selectedForm}
+          binders={binders}
           onClose={() => setSelectedFormId(null)}
           onUpdated={handleFormUpdated}
+        />
+      )}
+      {managingBinders && (
+        <BinderManagerModal
+          binders={binders}
+          onClose={() => setManagingBinders(false)}
+          onChanged={handleBindersChanged}
+        />
+      )}
+      {managingCustomForms && (
+        <CustomFormManagerModal
+          onClose={() => setManagingCustomForms(false)}
+          onChanged={handleCustomFormsChanged}
         />
       )}
     </div>

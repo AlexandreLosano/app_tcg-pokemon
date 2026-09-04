@@ -8,6 +8,7 @@ import formsRouter from './routes/forms';
 import collectionRouter from './routes/collection';
 import tcgCardsRouter from './routes/tcgCards';
 import syncRouter from './routes/sync';
+import bindersRouter from './routes/binders';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '23000', 10);
@@ -22,6 +23,7 @@ app.use('/api/forms', formsRouter);
 app.use('/api/collection', collectionRouter);
 app.use('/api/tcg-cards', tcgCardsRouter);
 app.use('/api/sync', syncRouter);
+app.use('/api/binders', bindersRouter);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 

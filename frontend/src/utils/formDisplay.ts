@@ -39,3 +39,9 @@ export function imageUrl(form: FormEntry): string | null {
 export function hasNoRegistration(form: FormEntry): boolean {
   return !form.owned && !form.tcg_card_id && !(form.notes && form.notes.trim());
 }
+
+// Forma cadastrada manualmente pelo usuário (ex: diferença grande entre macho e fêmea), não
+// sincronizada da PokéAPI — reconhecida pelo pokeapi_form_id negativo (ver POST /api/forms/custom).
+export function isCustomForm(form: FormEntry): boolean {
+  return form.pokeapi_form_id < 0;
+}
